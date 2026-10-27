@@ -62,3 +62,4 @@ button.pill{cursor:pointer}
 @keyframes piscar{0%,100%{box-shadow:0 0 0 0 #ef444400;transform:scale(1)}50%{box-shadow:0 0 0 5px #ef4444aa;transform:scale(1.06)}}
 .pill.piscar{animation:piscar 1s ease-in-out infinite;font-weight:700}
 @media (prefers-reduced-motion:reduce){.pill.piscar{animation:none;outline:2px solid #ef4444}}
+.col h2.arrastavel{cursor:grab}.col h2 .grip{color:var(--mut)}

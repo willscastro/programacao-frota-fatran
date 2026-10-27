@@ -284,15 +284,50 @@ function desenharQuadro() {
   const cols = ativos.map((s) => {
     const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
     const col = h("section", { class: "col",
-      ondragover: (e) => { if (can("status.mover")) { e.preventDefault(); col.classList.add("over"); } },
+      ondragover: (e) => {
+        const ehColuna = e.dataTransfer.types.includes("application/x-coluna");
+        if (ehColuna ? can("colunas.gerenciar") : can("status.mover")) { e.preventDefault(); col.classList.add("over"); }
+      },
       ondragleave: () => col.classList.remove("over"),
-      ondrop: (e) => { e.preventDefault(); col.classList.remove("over"); mover(Number(e.dataTransfer.getData("text/plain")), s.codigo); } },
-      h("h2", {}, h("span", {}, h("span", { class: "dot", style: "background:" + s.cor }), s.codigo), h("span", { class: "hint" }, itens.length)),
+      ondrop: (e) => {
+        e.preventDefault(); col.classList.remove("over");
+        const dc = e.dataTransfer.getData("application/x-coluna");
+        if (dc) moverColuna(dc, s.codigo); else mover(Number(e.dataTransfer.getData("text/plain")), s.codigo);
+      } },
+      h("h2", can("colunas.gerenciar") ? { class: "arrastavel", draggable: "true", title: "Arraste para mudar a ordem da coluna",
+        ondragstart: (e) => { e.dataTransfer.setData("application/x-coluna", s.codigo); e.dataTransfer.effectAllowed = "move"; } } : {},
+        h("span", {}, can("colunas.gerenciar") ? h("span", { class: "grip" }, "⠿ ") : null, h("span", { class: "dot", style: "background:" + s.cor }), s.codigo), h("span", { class: "hint" }, itens.length)),
       itens.map(cartao));
     return col;
   });
   $board.replaceChildren(...cols);
   desenharResumo();
+}
+
+// Grava a nova ordem das colunas (lista de códigos na ordem desejada).
+// A ordem é única no banco, então primeiro vai para valores negativos e depois para os finais.
+async function gravarOrdem(codigos, anterior) {
+  const atual = Object.fromEntries((anterior || S.status).map((x) => [x.codigo, x.ordem]));
+  const mudou = codigos.map((c, i) => [c, i + 1]).filter(([c, o]) => atual[c] !== o);
+  for (const [c, o] of mudou) {
+    const { error } = await sb.from("prog_status").update({ ordem: -o }).eq("codigo", c);
+    if (error) { toast(traduzErro(error)); return false; }
+  }
+  for (const [c, o] of mudou) {
+    const { error } = await sb.from("prog_status").update({ ordem: o }).eq("codigo", c);
+    if (error) { toast(traduzErro(error)); return false; }
+  }
+  return true;
+}
+async function moverColuna(origem, destino) {
+  if (origem === destino) return;
+  const anterior = S.status;
+  const ids = anterior.map((x) => x.codigo);
+  const alvo = ids.indexOf(destino); // a coluna arrastada assume a posição da coluna onde foi solta
+  const lista = ids.filter((c) => c !== origem);
+  lista.splice(alvo, 0, origem);
+  S.status = lista.map((c, i) => ({ ...anterior.find((x) => x.codigo === c), ordem: i + 1 })); desenharQuadro(); // mostra já
+  if (!(await gravarOrdem(lista, anterior))) carregar();
 }
 
 async function mover(id, novo) {
@@ -443,9 +478,11 @@ async function modalColunas() {
     const { data, error } = await sb.from("prog_status").select("*").order("ordem");
     if (error) { corpo.replaceChildren(h("div", { class: "err" }, traduzErro(error))); return; }
     const trocar = async (a, b) => {
-      const r1 = await sb.from("prog_status").update({ ordem: b.ordem }).eq("codigo", a.codigo);
-      const r2 = await sb.from("prog_status").update({ ordem: a.ordem }).eq("codigo", b.codigo);
-      const e = r1.error || r2.error; if (e) toast(traduzErro(e));
+      const lista = data.map((x) => x.codigo);
+      const i = lista.indexOf(a.codigo), j = lista.indexOf(b.codigo);
+      [lista[i], lista[j]] = [lista[j], lista[i]];
+      S.status = data; // gravarOrdem compara com a ordem atual do banco
+      await gravarOrdem(lista);
       await carregar(); desenhar();
     };
     const linhas = data.map((s, i) => h("tr", {},

@@ -1,4 +1,4 @@
--- STATUS: aplicado em partes no Supabase. Já no banco: permissão colunas.gerenciar, colunas ativo/protegido, checagens de código/cor e privilégios mínimos de tabela. AINDA NÃO no banco: função prog_validar_coluna + gatilhos + políticas de escrita de prog_status (o pedido foi cancelado pelo ambiente).
+-- STATUS: APLICADO no Supabase (em partes, em 27/10/2026). Inclui permissão colunas.gerenciar, colunas ativo/protegido, regras de proteção, políticas de escrita de prog_status e privilégios mínimos de tabela.
 -- Programação de Frota Fatran
 -- 0008 · Administrador gerencia as colunas do Kanban (criar, renomear, reordenar, ocultar, excluir)
 --        + privilégios de tabela explícitos (mínimo necessário; sem TRUNCATE)
