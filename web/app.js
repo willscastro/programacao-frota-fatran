@@ -216,6 +216,9 @@ function abrirGaveta(r) {
   const corpo = (lado) => h("aside", { class: "drawer " + lado },
     h("div", { class: "row" }, h("h3", { style: "flex:1" }, r.placa_cavalo), h("button", { onclick: fecharGaveta }, "Fechar")),
     h("div", { class: "sub hint" }, [r.tipo, r.motorista, r.status].filter(Boolean).join(" · ")),
+    can("status.mover") ? [h("label", {}, "Mover para (status)"),
+      h("select", { onchange: (e) => mover(r.id, e.target.value) },
+        S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, s.codigo)))] : null,
     r.espera_carga_min != null ? h("div", {}, "Espera no carregamento: " + fmtMin(r.espera_carga_min)) : null,
     r.espera_descarga_min != null ? h("div", {}, "Espera na descarga: " + fmtMin(r.espera_descarga_min)) : null,
     lado === "left" && S.lado === "both" ? h("div", { class: "hint" }, "Resumo") : [...campos, h("div", { class: "row", style: "margin-top:14px" }, salvar)]);
