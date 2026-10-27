@@ -87,7 +87,7 @@ button.pill:hover{background:var(--bg)}
 @keyframes pulse{50%{opacity:.25}}
 
 /* Gaveta */
-.drawer{position:fixed;top:var(--topH,58px);bottom:0;width:var(--dw);background:var(--panel);display:flex;flex-direction:column;z-index:20;transition:transform .28s ease;box-shadow:0 0 30px rgba(0,0,0,.18)}
+.drawer{position:fixed;top:var(--topH,58px);bottom:0;width:min(var(--dw),100vw);background:var(--panel);display:flex;flex-direction:column;z-index:20;transition:transform .28s ease;box-shadow:0 0 30px rgba(0,0,0,.18)}
 .drawer.left{left:0;border-right:1px solid var(--line);transform:translateX(-104%)}
 .drawer.right{right:0;border-left:1px solid var(--line);transform:translateX(104%)}
 .drawer.open{transform:none}
