@@ -22,36 +22,13 @@ insert into public.prog_permissoes_catalogo (codigo, descricao) values
   ('usuarios.gerenciar',  'Criar, editar e desativar usuários, perfis e permissões'),
   ('auditoria.ver',       'Ver a auditoria e o histórico de alterações');
 
--- Matriz inicial (ajustável depois pela tela de administração)
+-- Matriz inicial: TODOS os perfis com TODAS as permissões (decisão do administrador).
+-- O administrador restringe depois pela tela de administração.
+-- A matriz sugerida para uso definitivo está em db/ajustes/matriz_sugerida.sql.
 insert into public.prog_papel_permissoes (papel, permissao)
-select 'admin', codigo from public.prog_permissoes_catalogo;
-
-insert into public.prog_papel_permissoes (papel, permissao) values
-  ('gestor_frota', 'quadro.ver'),
-  ('gestor_frota', 'status.mover'),
-  ('gestor_frota', 'programacao.editar'),
-  ('gestor_frota', 'proxima_carga.editar'),
-  ('gestor_frota', 'cadastro.editar'),
-  ('gestor_frota', 'dashboard.ver'),
-  ('gestor_frota', 'exportar'),
-  ('gestor_frota', 'dia.gerar'),
-  ('gestor_frota', 'dia.editar_passado'),
-  ('gestor_frota', 'auditoria.ver'),
-
-  ('programador', 'quadro.ver'),
-  ('programador', 'status.mover'),
-  ('programador', 'programacao.editar'),
-  ('programador', 'proxima_carga.editar'),
-  ('programador', 'dashboard.ver'),
-
-  ('comercial', 'quadro.ver'),
-  ('comercial', 'proxima_carga.editar'),
-  ('comercial', 'dashboard.ver'),
-  ('comercial', 'exportar'),
-
-  ('diretoria', 'quadro.ver'),
-  ('diretoria', 'dashboard.ver'),
-  ('diretoria', 'exportar');
+select p.codigo, c.codigo
+from public.prog_papeis p
+cross join public.prog_permissoes_catalogo c;
 
 -- Colunas do Kanban, na ordem do fluxo
 insert into public.prog_status (codigo, ordem, cor) values

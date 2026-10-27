@@ -10,7 +10,7 @@ Transformar a planilha manual de programação de frota da Fatran em uma soluç�
 |---|---|
 | [`docs/CEREBRO.md`](docs/CEREBRO.md) | Documento mestre: como a planilha funciona, modelo de dados, regras, UX e roadmap |
 | [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Sistema multiusuário: perfis e permissões, login, banco, hospedagem e geração automática do dia |
-| [`db/migrations/`](db/migrations) | Scripts SQL do banco (esquema, dados iniciais, segurança, dia automático). **Ainda não aplicados** |
+| [`db/migrations/`](db/migrations) | Scripts SQL do banco (esquema, dados iniciais, segurança, dia automático). **Aplicados** no Supabase (projeto `fatran-frota`) |
 | [`supabase/functions/criar-usuario`](supabase/functions/criar-usuario/index.ts) | Função segura para o admin criar usuários |
 | [`design/prototipo-kanban.html`](design/prototipo-kanban.html) | Protótipo interativo (HTML/CSS/JS, sem dependências). Abra no navegador |
 | [`design/dados-exemplo-26-10-2026.json`](design/dados-exemplo-26-10-2026.json) | Dados reais da aba de 26/10/2026, usados no protótipo |
@@ -29,7 +29,7 @@ Transformar a planilha manual de programação de frota da Fatran em uma soluç�
 
 ## Fase 1 — banco e login (em andamento)
 
-Os scripts do banco estão escritos e foram testados num PostgreSQL local, simulando o Supabase, com cada perfil. Faltam duas decisões para aplicar: onde fica o banco e a matriz final de permissões.
+Banco aplicado no Supabase: 12 tabelas `prog_*` com segurança por linha, auditoria, geração automática do dia (todo dia às 00:10, horário de Brasília) e tempo real. Todos os perfis começam com todas as permissões; o admin restringe depois (`db/ajustes/matriz_sugerida.sql`). A função `criar-usuario` está publicada. Faltam: criar o primeiro admin (`db/migrations/0006_primeiro_admin.sql`), cadastrar a frota e ligar o Kanban ao banco.
 
 ## Próximos passos
 

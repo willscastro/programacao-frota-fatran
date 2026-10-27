@@ -150,6 +150,8 @@ create table public.prog_programacao (
 );
 create index prog_programacao_dia_idx    on public.prog_programacao (dia);
 create index prog_programacao_status_idx on public.prog_programacao (dia, status);
+create index prog_programacao_conjunto_idx on public.prog_programacao (conjunto_id);
+create index prog_programacao_motorista_idx on public.prog_programacao (motorista_id);
 
 -- Histórico de mudanças de status (substitui comparar abas lado a lado)
 create table public.prog_status_eventos (

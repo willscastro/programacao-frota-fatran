@@ -24,7 +24,12 @@
 7. **Troca de senha obrigatória** no primeiro acesso, e **verificação em duas etapas** para admin e gestor.
 8. **Desativar em vez de apagar** usuários, para manter o histórico de quem fez o quê.
 
-## 2. Perfis e permissões (proposta inicial)
+## 2. Perfis e permissões
+
+> **Estado atual (decisão do administrador):** todos os perfis começam com **todas** as permissões. O administrador restringe depois pela tela de administração, ou rodando `db/ajustes/matriz_sugerida.sql`, que aplica a matriz sugerida abaixo.
+> **Atenção:** enquanto a matriz não for restringida, qualquer usuário pode criar usuários e mudar permissões. Restrinja **antes** de criar contas para outras pessoas.
+
+Matriz **sugerida** para uso definitivo:
 
 ✅ = pode · — = não pode. Tudo isto fica em tabela e o admin pode mudar depois.
 
@@ -125,8 +130,8 @@ Backup: o Supabase faz cópia diária (conforme o plano) e vamos acrescentar uma
 
 ## 9. Decisões em aberto
 
-1. **Onde fica o banco:** no projeto Supabase `fatran-frota` que já existe (e já tem outro sistema com dados) ou em um projeto novo só da programação.
-2. **A matriz da seção 2 está certa?** Principalmente: o comercial pode editar a próxima carga? A diretoria pode exportar? O programador pode mexer no cadastro?
+1. ~~Onde fica o banco~~ **Decidido:** no projeto Supabase `fatran-frota`, com tabelas de prefixo `prog_` para conviver com o outro sistema.
+2. ~~Matriz~~ **Decidido por ora:** todos com todas as permissões; o admin ajusta depois. Perguntas para o ajuste: Principalmente: o comercial pode editar a próxima carga? A diretoria pode exportar? O programador pode mexer no cadastro?
 3. **Quem são os primeiros usuários** (nome, e-mail e perfil), para eu preparar as contas.
 4. **Endereço do sistema:** domínio próprio da Fatran ou endereço gratuito do provedor?
 5. **Verificação em duas etapas** para admin e gestor: obrigatória mesmo?
