@@ -18,7 +18,7 @@
         },
         {
           "key": "Content-Security-Policy",
-          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self' https://rmlbnqnnanrkvoeqntim.supabase.co wss://rmlbnqnnanrkvoeqntim.supabase.co; frame-ancestors 'none'; base-uri 'self'"
+          "value": "default-src 'self'; script-src 'self' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; img-src 'self' data: https://tile.openstreetmap.org; connect-src 'self' https://rmlbnqnnanrkvoeqntim.supabase.co wss://rmlbnqnnanrkvoeqntim.supabase.co; frame-ancestors 'none'; base-uri 'self'"
         }
       ]
     }

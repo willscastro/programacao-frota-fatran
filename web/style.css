@@ -77,3 +77,4 @@ button.pill{cursor:pointer}
 .pn-bar{display:block;height:100%;background:var(--pri);border-radius:0 4px 4px 0}
 .pn-val{flex:0 0 52px;text-align:right;font-size:12px}
 .pn-list{list-style:none;margin:0;padding:0}.pn-list li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
+#mapa-frota{height:min(70vh,560px);border-radius:10px;border:1px solid var(--bd)}

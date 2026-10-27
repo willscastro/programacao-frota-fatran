@@ -250,6 +250,7 @@ function desenharEstrutura() {
   const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
   const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
   $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
+  const mapa = h("button", { onclick: abrirMapa }, "🗺️ Mapa");
   const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
@@ -266,7 +267,7 @@ function desenharEstrutura() {
       h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, legendas, $btnDesfazer, painel, reset, ...botoes),
+      compacto, legendas, $btnDesfazer, mapa, painel, reset, ...botoes),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
@@ -741,4 +742,57 @@ async function abrirPainel() {
         barras("Cargas por motorista", contar(periodo, (r) => r.motorista).slice(0, 8))));
   }
   desenhar();
+}
+
+
+// ---------- mapa da frota ----------
+let leafletPronto = null;
+function carregarLeaflet() {
+  if (leafletPronto) return leafletPronto;
+  leafletPronto = new Promise((ok, falha) => {
+    const css = document.createElement("link"); css.rel = "stylesheet"; css.href = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css"; document.head.append(css);
+    const js = document.createElement("script"); js.src = "https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js";
+    js.onload = () => ok(window.L); js.onerror = () => { leafletPronto = null; falha(new Error("Não foi possível carregar o mapa.")); };
+    document.head.append(js);
+  });
+  return leafletPronto;
+}
+const haMin = (ts) => Math.max(0, Math.round((Date.now() - new Date(ts)) / 60000));
+
+async function abrirMapa() {
+  const mapaEl = h("div", { id: "mapa-frota" });
+  const info = h("div", { class: "hint", style: "margin:6px 0" }, "Carregando mapa…");
+  const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) fechar(); } },
+    h("div", { class: "box" }, h("div", { class: "row" }, h("h2", { style: "flex:1;margin:0" }, "Mapa da frota"), h("button", { onclick: () => fechar() }, "Fechar")), info, mapaEl));
+  document.body.append(m);
+  let L, mapa, timer;
+  const fechar = () => { clearInterval(timer); if (mapa) mapa.remove(); m.remove(); };
+  try { L = await carregarLeaflet(); } catch (e) { info.textContent = e.message; return; }
+  mapa = L.map(mapaEl).setView([-20.85, -41.1], 8);
+  L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18, attribution: "© OpenStreetMap" }).addTo(mapa);
+  const camada = L.layerGroup().addTo(mapa);
+  let primeira = true;
+  async function desenhar() {
+    const { data, error } = await sb.from("prog_programacao_v").select("*").eq("dia", S.dia).not("ultima_lat", "is", null);
+    if (error) { info.textContent = traduzErro(error); return; }
+    camada.clearLayers();
+    const pts = [];
+    (data || []).forEach((r) => {
+      const min = haMin(r.ultima_posicao_em), velho = min > 30;
+      const cor = velho ? "#94a3b8" : (S.status.find((x) => x.codigo === r.status) || {}).cor || "#2563eb";
+      const icone = L.divIcon({ className: "", iconSize: [34, 34], iconAnchor: [17, 17],
+        html: '<div style="background:' + cor + ';color:#fff;border:2px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font:700 10px system-ui;box-shadow:0 1px 4px #0006">' + (r.placa_cavalo || "").slice(-4) + "</div>" });
+      const pop = document.createElement("div");
+      pop.append(h("b", {}, r.placa_cavalo), h("div", {}, [r.motorista, r.status].filter(Boolean).join(" · ")),
+        r.destino ? h("div", {}, "→ " + r.destino) : "", h("div", { class: "hint" }, "Posição de há " + fmtMin(min) + (velho ? " (desatualizada)" : "")),
+        h("a", { href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener" }, "Abrir no Google Maps"));
+      L.marker([r.ultima_lat, r.ultima_lng], { icon: icone, title: r.placa_cavalo }).bindPopup(pop).addTo(camada);
+      pts.push([r.ultima_lat, r.ultima_lng]);
+    });
+    info.textContent = pts.length ? pts.length + " veículo(s) com posição hoje · atualiza a cada 30 s · cinza = sem sinal há mais de 30 min" : "Nenhum veículo enviou posição hoje ainda.";
+    if (primeira && pts.length) { mapa.fitBounds(pts, { padding: [40, 40], maxZoom: 14 }); primeira = false; }
+  }
+  mapa.invalidateSize();
+  await desenhar();
+  timer = setInterval(desenhar, 30000);
 }
