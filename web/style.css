@@ -56,3 +56,6 @@ header.top select,header.top input{width:auto}
 .pill.v{background:#7f1d1d;border-color:#7f1d1d;color:#fff}
 .pill.on{box-shadow:0 0 0 2px var(--pri)}
 button.pill{cursor:pointer}
+.alertas{margin:8px 0;padding:8px 10px 8px 24px;border-radius:8px;background:#fff6db;color:#6b4400;font-size:12.5px}
+.alertas li.crit{color:#7a1414;font-weight:600}
+@media (prefers-color-scheme:dark){.alertas{background:#3b3216;color:#f5d98a}.alertas li.crit{color:#fca5a5}}

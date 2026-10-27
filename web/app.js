@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, filtro: { tipo: "", alerta: false, status: "" } };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], filtro: { tipo: "", alerta: false, status: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -16,7 +16,7 @@ function h(tag, attrs, ...filhos) {
     else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
     else if (v !== false && v != null) el.setAttribute(k, v === true ? "" : v);
   }
-  for (const f of filhos.flat()) if (f != null) el.append(f.nodeType ? f : document.createTextNode(String(f)));
+  for (const f of filhos.flat(Infinity)) if (f != null) el.append(f.nodeType ? f : document.createTextNode(String(f)));
   return el;
 }
 let toastTimer;
@@ -29,6 +29,10 @@ function traduzErro(e) {
   const m = (e && e.message) || String(e);
   if (/Invalid login/i.test(m)) return "E-mail ou senha incorretos.";
   if (/row-level security|permission denied/i.test(m)) return "Seu perfil não tem permissão para isso.";
+  if (/carga_coerente/.test(m)) return "O fim do carregamento não pode ser antes da chegada.";
+  if (/descarga_coerente/.test(m)) return "O fim da descarga não pode ser antes da chegada.";
+  if (/duplicate key|already exists/i.test(m)) return "Já existe um cadastro igual.";
+  if (/placa/.test(m) && /check/i.test(m)) return "Placa inválida: use 7 letras/números.";
   return m;
 }
 function fmtMin(min) {
@@ -102,13 +106,15 @@ async function iniciar() {
 }
 
 async function carregar() {
-  const [st, rows, tp] = await Promise.all([
+  const [st, rows, tp, mo] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
     sb.from("prog_tipos_conjunto").select("codigo,cor"),
+    sb.from("prog_motoristas").select("id,nome,ativo").order("nome"),
   ]);
   if (st.error || rows.error) { toast(traduzErro(st.error || rows.error)); return; }
   S.status = st.data; S.rows = rows.data;
+  S.motoristas = mo.data || [];
   S.tipos = Object.fromEntries((tp.data || []).map((t) => [t.codigo, t.cor]));
   desenharQuadro();
   if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); r ? abrirGaveta(r) : fecharGaveta(); }
@@ -198,6 +204,7 @@ function desenharEstrutura() {
   const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
+  if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
   if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalUsuarios }, "Usuários"));
   botoes.push(h("button", { onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"));
@@ -260,46 +267,124 @@ async function mover(id, novo) {
   }
 }
 
-// ---------- gaveta de detalhes ----------
+// ---------- gaveta de detalhes (edição completa da viagem) ----------
+const dtLocal = (ts) => (ts ? new Date(ts).toLocaleString("sv-SE", { timeZone: "America/Sao_Paulo" }).replace(" ", "T").slice(0, 16) : "");
+const CAMPOS = [
+  ["motorista_id", "Motorista", "motorista", "programacao.editar"],
+  ["placa_implemento", "Implemento (placa)", "placa", "programacao.editar"],
+  ["tipo", "Tipo do conjunto", "tipo", "programacao.editar"],
+  ["data_programacao", "Data da programação", "date", "programacao.editar"],
+  ["cheg_carga", "Chegada no carregamento", "dt", "programacao.editar"],
+  ["carregou_em", "Fim do carregamento", "dt", "programacao.editar"],
+  ["embarcador", "Embarcador", "txt", "programacao.editar"],
+  ["destino", "Destino", "txt", "programacao.editar"],
+  ["prog_entrega", "Previsão de entrega", "date", "programacao.editar"],
+  ["cheg_descarga", "Chegada na descarga", "dt", "programacao.editar"],
+  ["fim_descarga", "Fim da descarga", "dt", "programacao.editar"],
+  ["localizacao", "Localização atual", "txt", "programacao.editar"],
+  ["obs", "Observações", "area", "programacao.editar"],
+  ["proxima_carga", "Próxima carga", "txt", "proxima_carga.editar"],
+  ["proxima_regiao", "Região da próxima carga (ES, SP…)", "txt", "proxima_carga.editar"],
+];
 function fecharGaveta() { S.aberto = null; document.getElementById("gavetas").replaceChildren(); }
 function abrirGaveta(r) {
   S.aberto = r.id;
-  const campo = (rot, chave, tipo, perm) => {
-    const el = tipo === "area" ? h("textarea", { rows: 3 }) : h("input", { type: "text" });
-    el.value = r[chave] ?? ""; el.dataset.k = chave; el.disabled = !can(perm);
-    return [h("label", {}, rot), el];
-  };
-  const campos = [
-    ...campo("Embarcador", "embarcador", "txt", "programacao.editar"),
-    ...campo("Destino", "destino", "txt", "programacao.editar"),
-    ...campo("Localização atual", "localizacao", "txt", "programacao.editar"),
-    ...campo("Observações", "obs", "area", "programacao.editar"),
-    ...campo("Próxima carga", "proxima_carga", "txt", "proxima_carga.editar"),
-    ...campo("Região da próxima carga", "proxima_regiao", "txt", "proxima_carga.editar"),
-  ];
+  const els = CAMPOS.map(([k, rot, tipo, perm]) => {
+    let el;
+    if (tipo === "motorista") {
+      el = h("select", {}, h("option", { value: "" }, "(sem motorista)"),
+        S.motoristas.filter((m) => m.ativo || m.id === r.motorista_id).map((m) => h("option", { value: String(m.id) }, m.nome)));
+      el.value = r.motorista_id != null ? String(r.motorista_id) : "";
+    } else if (tipo === "tipo") {
+      el = h("select", {}, Object.keys(S.tipos).map((t) => h("option", { value: t }, t)));
+      el.value = r.tipo || "";
+    } else if (tipo === "date") { el = h("input", { type: "date" }); el.value = r[k] || ""; }
+    else if (tipo === "dt") { el = h("input", { type: "datetime-local" }); el.value = dtLocal(r[k]); }
+    else if (tipo === "area") { el = h("textarea", { rows: 3 }); el.value = r[k] ?? ""; }
+    else { el = h("input", { type: "text" }); el.value = r[k] ?? ""; }
+    el.dataset.k = k; el.dataset.t = tipo; el.dataset.i = el.value; el.disabled = !can(perm);
+    return { k, el, bloco: [h("label", {}, rot), el] };
+  });
   const salvar = h("button", { class: "pri", onclick: async () => {
     const alt = {};
-    for (const el of campos.filter((c) => c.dataset && c.dataset.k && !c.disabled)) {
-      const v = el.value.trim() || null;
-      if (v !== (r[el.dataset.k] ?? null)) alt[el.dataset.k] = v;
+    for (const { k, el } of els) {
+      if (el.disabled || el.value === el.dataset.i) continue;
+      const v = el.value.trim(), t = el.dataset.t;
+      alt[k] = t === "motorista" ? (v ? Number(v) : null)
+        : t === "dt" ? (v ? v + ":00-03:00" : null)
+        : t === "placa" ? (v.toUpperCase().replace(/[^A-Z0-9]/g, "") || null)
+        : (v || null);
     }
     if (!Object.keys(alt).length) return toast("Nada para salvar.");
+    if ("localizacao" in alt) alt.posicao_em = new Date().toISOString();
     const { data, error } = await sb.from("prog_programacao").update(alt).eq("id", r.id).eq("versao", r.versao).select("id");
     if (error) return toast(traduzErro(error));
-    if (!data.length) toast("Outra pessoa alterou este cartão. Atualizando…"); else toast("Salvo.");
+    toast(data.length ? "Salvo." : "Outra pessoa alterou este cartão. Atualizando…");
     carregar();
-  } }, "Salvar");
-  const corpo = (lado) => h("aside", { class: "drawer " + lado },
+  } }, "Salvar alterações");
+  const mover_ = can("status.mover") ? [h("label", {}, "Status"),
+    h("select", { onchange: (e) => mover(r.id, e.target.value) },
+      S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, s.codigo)))] : null;
+  const topo = (lado) => h("div", {},
     h("div", { class: "row" }, h("h3", { style: "flex:1" }, r.placa_cavalo), h("button", { onclick: fecharGaveta }, "Fechar")),
     h("div", { class: "sub hint" }, [r.tipo, r.motorista, r.status].filter(Boolean).join(" · ")),
-    can("status.mover") ? [h("label", {}, "Mover para (status)"),
-      h("select", { onchange: (e) => mover(r.id, e.target.value) },
-        S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, s.codigo)))] : null,
-    r.espera_carga_min != null ? h("div", {}, "Espera no carregamento: " + fmtMin(r.espera_carga_min)) : null,
-    r.espera_descarga_min != null ? h("div", {}, "Espera na descarga: " + fmtMin(r.espera_descarga_min)) : null,
-    lado === "left" && S.lado === "both" ? h("div", { class: "hint" }, "Resumo") : [...campos, h("div", { class: "row", style: "margin-top:14px" }, salvar)]);
+    lado !== "left" && r.espera_carga_min != null ? h("div", {}, "Espera no carregamento: " + fmtMin(r.espera_carga_min)) : null,
+    lado !== "left" && r.espera_descarga_min != null ? h("div", {}, "Espera na descarga: " + fmtMin(r.espera_descarga_min)) : null,
+    alertas(r).length ? h("ul", { class: "alertas" }, alertas(r).map((x) => h("li", { class: x.s }, x.t))) : null);
   const g = document.getElementById("gavetas");
-  if (S.lado === "both") g.replaceChildren(corpo("left"), corpo("right")); else g.replaceChildren(corpo(S.lado));
+  const corpo = (lado, lista, extra) => h("aside", { class: "drawer " + lado }, topo(lado), lista.map((x) => x.bloco), extra);
+  const rodape = h("div", { class: "row", style: "margin-top:14px" }, salvar);
+  if (S.lado === "both") g.replaceChildren(corpo("left", els.slice(0, 8), mover_), corpo("right", els.slice(8), rodape));
+  else g.replaceChildren(corpo(S.lado, els, [mover_, rodape]));
+}
+
+// ---------- cadastro de frota e motoristas ----------
+async function modalCadastro() {
+  const corpo = h("div");
+  modal("Cadastro de frota e motoristas", corpo);
+  async function desenhar() {
+    const [cj, mt] = await Promise.all([sb.from("prog_conjuntos").select("*").order("placa_cavalo"), sb.from("prog_motoristas").select("*").order("nome")]);
+    if (cj.error || mt.error) { corpo.replaceChildren(h("div", { class: "err" }, traduzErro(cj.error || mt.error))); return; }
+    const alterna = (tabela, chave, valor, ativo) => async () => {
+      const { error } = await sb.from(tabela).update({ ativo: !ativo }).eq(chave, valor);
+      if (error) toast(traduzErro(error)); await carregar(); desenhar();
+    };
+    const placa = h("input", { type: "text", placeholder: "Placa do cavalo", maxlength: 8, style: "text-transform:uppercase" });
+    const impl = h("input", { type: "text", placeholder: "Placa do implemento (opcional)", maxlength: 8, style: "text-transform:uppercase" });
+    const tipo = h("select", {}, Object.keys(S.tipos).map((t) => h("option", { value: t }, t)));
+    const norm = (v) => v.toUpperCase().replace(/[^A-Z0-9]/g, "");
+    const addConj = h("button", { class: "pri", onclick: async () => {
+      const pc = norm(placa.value), pi = norm(impl.value) || null;
+      if (pc.length !== 7) return toast("A placa do cavalo precisa ter 7 letras/números.");
+      const novo = await sb.from("prog_conjuntos").insert({ placa_cavalo: pc, placa_implemento: pi, tipo: tipo.value }).select("id").single();
+      if (novo.error) return toast(traduzErro(novo.error));
+      if (can("programacao.editar")) { // já coloca no quadro de hoje
+        const ordem = S.rows.reduce((m, x) => Math.max(m, x.ordem || 0), 0) + 1;
+        const lin = await sb.from("prog_programacao").insert({ dia: S.dia, conjunto_id: novo.data.id, placa_implemento: pi, tipo: tipo.value, status: "AG. PROGRAMAÇÃO", ordem });
+        if (lin.error) toast("Cadastrado, mas não entrou no quadro de hoje: " + traduzErro(lin.error));
+      }
+      toast("Conjunto cadastrado."); await carregar(); desenhar();
+    } }, "Adicionar conjunto");
+    const nome = h("input", { type: "text", placeholder: "Nome do motorista", maxlength: 80 });
+    const addMot = h("button", { class: "pri", onclick: async () => {
+      const n = nome.value.trim().toUpperCase();
+      if (n.length < 2) return toast("Informe o nome do motorista.");
+      const { error } = await sb.from("prog_motoristas").insert({ nome: n });
+      if (error) return toast(traduzErro(error));
+      toast("Motorista cadastrado."); await carregar(); desenhar();
+    } }, "Adicionar motorista");
+    corpo.replaceChildren(
+      h("h3", {}, "Conjuntos (" + cj.data.filter((x) => x.ativo).length + " ativos)"),
+      h("table", {}, h("tbody", {}, cj.data.map((c) => h("tr", {}, h("td", {}, c.placa_cavalo), h("td", {}, c.placa_implemento || "—"), h("td", {}, c.tipo),
+        h("td", {}, h("button", { onclick: alterna("prog_conjuntos", "id", c.id, c.ativo) }, c.ativo ? "Desativar" : "Ativar")))))),
+      h("label", {}, "Novo conjunto"), h("div", { class: "row" }, placa, impl), h("div", { class: "row", style: "margin-top:6px" }, tipo, addConj),
+      h("p", { class: "hint" }, "O conjunto novo já entra no quadro de hoje e nos dias seguintes. Desativar tira dos próximos dias (hoje continua)."),
+      h("h3", {}, "Motoristas (" + mt.data.filter((x) => x.ativo).length + " ativos)"),
+      h("table", {}, h("tbody", {}, mt.data.map((m) => h("tr", {}, h("td", {}, m.nome),
+        h("td", {}, h("button", { onclick: alterna("prog_motoristas", "id", m.id, m.ativo) }, m.ativo ? "Desativar" : "Ativar")))))),
+      h("label", {}, "Novo motorista"), h("div", { class: "row" }, nome, addMot));
+  }
+  desenhar();
 }
 
 // ---------- administração: colunas ----------
