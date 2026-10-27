@@ -41,6 +41,14 @@ class MainActivity : Activity() {
         if (Api.logado(this)) iniciar() else telaLogin()
     }
 
+    private var voltou = false
+    private var nomeAtual: String? = null
+    override fun onResume() {
+        super.onResume()
+        if (voltou && Api.logado(this) && nomeAtual != null) situacao(nomeAtual!!)
+        voltou = true
+    }
+
     override fun onDestroy() { pararAtualizacao(); super.onDestroy() }
 
     // ---------- utilidades de tela ----------
@@ -131,6 +139,7 @@ class MainActivity : Activity() {
     }
 
     private fun situacao(nome: String) {
+        nomeAtual = nome
         emFundo({
             val s = Api.rpc(this, "prog_app_situacao") as JSONArray
             ui.post { if (s.length() == 0) escolherVeiculo(nome) else painel(nome, s.getJSONObject(0)) }
@@ -186,7 +195,7 @@ class MainActivity : Activity() {
         botao("Trocar de veículo", cinza, false) { emFundo({ Api.rpc(this, "prog_app_liberar"); ui.post { situacaoTrocar(nome) } }) }
         botao("Sair", cinza, false) { TrackingService.parar(this); Api.sair(this); telaLogin() }
         val r = Runnable { situacao(nome) }
-        atualizador = r; ui.postDelayed(r, 60000)
+        atualizador = r; ui.postDelayed(r, 10000)
     }
 
     /** Libera o veículo atual para escolher outro (o gestor também pode ajustar pelo quadro). */
