@@ -130,6 +130,13 @@ function assinarTempoReal() {
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_programacao" }, recarregar)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_status" }, recarregar)
     .subscribe();
+  // Rede de segurança: se o tempo real falhar, atualiza ao voltar para a aba e a cada 30 s
+  if (!S.poll) {
+    const seguro = () => { if (document.visibilityState === "visible" && !document.querySelector(".modal") && !document.querySelector(".drawer input:focus, .drawer textarea:focus")) carregar(); };
+    document.addEventListener("visibilitychange", seguro);
+    window.addEventListener("focus", seguro);
+    S.poll = setInterval(seguro, 30000);
+  }
 }
 
 // ---------- alertas e resumo ----------
