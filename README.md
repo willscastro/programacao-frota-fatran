@@ -12,6 +12,7 @@ Transformar a planilha manual de programação de frota da Fatran em uma soluç�
 | [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Sistema multiusuário: perfis e permissões, login, banco, hospedagem e geração automática do dia |
 | [`db/migrations/`](db/migrations) | Scripts SQL do banco (esquema, dados iniciais, segurança, dia automático). **Aplicados** no Supabase (projeto `fatran-frota`) |
 | [`supabase/functions/criar-usuario`](supabase/functions/criar-usuario/index.ts) | Função segura para o admin criar usuários |
+| [`web/`](web) | **O sistema** (HTML/JS puro + Supabase): login, troca de senha, Kanban com arrastar e soltar, gaveta, tempo real, gestão de colunas e usuários. Publicado pela Vercel (pasta raiz `web`) |
 | [`design/prototipo-kanban.html`](design/prototipo-kanban.html) | Protótipo interativo (HTML/CSS/JS, sem dependências). Abra no navegador |
 | [`design/dados-exemplo-26-10-2026.json`](design/dados-exemplo-26-10-2026.json) | Dados reais da aba de 26/10/2026, usados no protótipo |
 
