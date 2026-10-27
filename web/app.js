@@ -288,6 +288,8 @@ function cartao(r) {
     h("div", { class: "sub" }, [r.tipo, r.motorista].filter(Boolean).join(" · ")),
     r.destino ? h("div", { class: "sub dest" }, "→ " + r.destino) : null,
     r.localizacao ? h("div", { class: "sub dest" }, "📍 " + r.localizacao) : null,
+    r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
+      title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, "🛰️ GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000))) ) : null,
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
 
@@ -617,14 +619,22 @@ async function modalUsuarios() {
   const nome = h("input", { type: "text", placeholder: "Nome completo" });
   const email = h("input", { type: "email", placeholder: "E-mail" });
   const papel = h("select", {}, papeis.map((p) => h("option", { value: p.codigo }, p.nome)));
+  const mot = h("select", {}, h("option", { value: "" }, "— escolha o motorista —"), S.motoristas.filter((m) => m.ativo).map((m) => h("option", { value: m.id }, m.nome)));
+  const blocoMot = h("div", { style: "display:none" }, h("label", {}, "Motorista (cadastro)"), mot);
+  papel.onchange = () => { blocoMot.style.display = papel.value === "motorista" ? "" : "none"; };
   const res = h("div", { class: "hint" });
   const criar = h("button", { class: "pri", onclick: async () => {
+    if (papel.value === "motorista" && !mot.value) { res.textContent = "Escolha o motorista do cadastro."; return; }
     res.textContent = "Criando…";
     const { data, error } = await sb.functions.invoke("criar-usuario", { body: { nome: nome.value, email: email.value, papel: papel.value } });
     if (error || !data || data.erro) {
       let msg = (data && data.erro) || "Não foi possível criar.";
       try { if (error && error.context) msg = (await error.context.json()).erro || msg; } catch (_) {}
       res.textContent = msg; return;
+    }
+    if (papel.value === "motorista") {
+      const v = await sb.from("prog_perfis").update({ motorista_id: Number(mot.value) }).eq("id", data.id);
+      if (v.error) { res.textContent = "Usuário criado, mas não foi possível vincular ao motorista: " + traduzErro(v.error); return; }
     }
     res.replaceChildren(h("strong", {}, "Usuário criado. "), "Senha temporária (aparece só agora): ", h("code", {}, data.senha_temporaria),
       h("div", {}, "Envie por um canal seguro. Ele precisará trocá-la no primeiro acesso."));
@@ -636,7 +646,7 @@ async function modalUsuarios() {
       toast(error ? traduzErro(error) : "Atualizado."); } }, u.ativo ? "Desativar" : "Ativar"))));
   corpo.replaceChildren(
     h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Perfil"), h("th", {}, "Situação"), h("th", {}))), h("tbody", {}, linhas)),
-    h("h3", {}, "Novo usuário"), h("label", {}, "Nome"), nome, h("label", {}, "E-mail"), email, h("label", {}, "Perfil"), papel,
+    h("h3", {}, "Novo usuário"), h("label", {}, "Nome"), nome, h("label", {}, "E-mail"), email, h("label", {}, "Perfil"), papel, blocoMot,
     h("div", { class: "row", style: "margin-top:12px" }, criar), res);
 }
 
