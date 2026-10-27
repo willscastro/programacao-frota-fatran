@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, filtro: { tipo: "", alerta: false } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -124,43 +124,109 @@ function assinarTempoReal() {
     .subscribe();
 }
 
+// ---------- alertas e resumo ----------
+const diaLocal = (ts) => (ts ? new Date(ts).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : null);
+const semZero = (x) => x.replace(/\b0(\d)/g, "$1");
+function esperaViva(r) {
+  if (r.status === "AG. CARREGAMENTO") return r.espera_carga_min;
+  if (r.status === "AG. DESCARGA") return r.espera_descarga_min;
+  return null;
+}
+function alertas(r) {
+  const a = [];
+  const chegou = diaLocal(r.cheg_carga);
+  if (r.prog_entrega && chegou && r.prog_entrega < chegou)
+    a.push({ s: "crit", t: "Previsão de entrega (" + dataBR(r.prog_entrega) + ") anterior à chegada no carregamento (" + dataBR(chegou) + ")" });
+  const citadas = (r.obs || "").match(/\b\d{1,2}\/\d{1,2}\b/g);
+  if (citadas && r.prog_entrega && r.status !== "ENTREGUE") {
+    const prev = semZero(dataBR(r.prog_entrega).slice(0, 5));
+    if (!citadas.some((x) => semZero(x) === prev)) a.push({ s: "warn", t: "A observação cita " + citadas.join(", ") + ", mas a previsão de entrega é " + dataBR(r.prog_entrega) });
+  }
+  if (r.status === "EM MANUTENÇÃO" && r.carregou_em) a.push({ s: "warn", t: "Em manutenção com carga já carregada — confirmar o status" });
+  if (!r.proxima_carga && r.status !== "EM MANUTENÇÃO" && r.status !== "ENTREGUE") a.push({ s: "warn", t: "Sem próxima carga definida" });
+  const e = esperaViva(r);
+  if (e != null && e >= 300) a.push({ s: e >= 420 ? "crit" : "warn", t: (r.status === "AG. CARREGAMENTO" ? "Espera no carregamento" : "Espera na descarga") + " em " + fmtMin(e) });
+  return a;
+}
+const pior = (al) => (al.some((x) => x.s === "crit") ? "crit" : al.length ? "warn" : "");
+
+function desenharResumo() {
+  if (!$resumo) return;
+  const ativos = S.rows.filter((r) => r.status !== "ENTREGUE").length;
+  const n = (st) => S.rows.filter((r) => r.status === st).length;
+  const esp = S.rows.filter((r) => (esperaViva(r) ?? 0) >= 300).length;
+  const com = S.rows.filter((r) => alertas(r).length).length;
+  const pill = (num, txt, cls) => h("span", { class: "pill " + (cls || "") }, h("b", {}, num), " " + txt);
+  $resumo.replaceChildren(
+    pill(ativos, "conjuntos ativos"),
+    pill(n("EM TRÂNSITO"), "em trânsito"),
+    pill(n("AG. CARREGAMENTO") + n("AG. DESCARGA"), "aguardando carga/descarga"),
+    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : ""),
+    pill(esp, "esperas ≥ 5h", esp ? "crit" : ""),
+    h("button", { class: "pill " + (com ? "warn" : "") + (S.filtro.alerta ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
+    h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
+}
+function alternarAlerta() {
+  S.filtro.alerta = !S.filtro.alerta;
+  if ($btnAlerta) $btnAlerta.classList.toggle("on", S.filtro.alerta);
+  desenharQuadro();
+}
+
 // ---------- tela principal ----------
-let $board, $busca;
+let $board, $busca, $resumo, $btnAlerta, $lados;
+const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado"];
+function setLado(v) {
+  S.lado = v;
+  for (const [k, b] of Object.entries($lados)) b.classList.toggle("on", k === v);
+  if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); if (r) abrirGaveta(r); }
+}
 function desenharEstrutura() {
-  $busca = h("input", { type: "search", placeholder: "Buscar placa, motorista, destino…", style: "max-width:260px", oninput: desenharQuadro });
+  $busca = h("input", { type: "search", placeholder: "Buscar placa, motorista, destino…", style: "max-width:240px", oninput: desenharQuadro });
+  const tipo = h("select", { style: "width:auto", onchange: (e) => { S.filtro.tipo = e.target.value; desenharQuadro(); } },
+    h("option", { value: "" }, "Todos os tipos"), Object.keys(S.tipos).map((t) => h("option", { value: t }, t)));
+  $btnAlerta = h("button", { onclick: alternarAlerta }, "⚠ Só com alerta");
+  const compacto = h("button", { onclick: (e) => { document.body.classList.toggle("compact"); e.currentTarget.classList.toggle("on"); } }, "Compacto");
+  const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
+  $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
   if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalUsuarios }, "Usuários"));
   botoes.push(h("button", { onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"));
-  const lado = h("select", { style: "width:auto", onchange: (e) => { S.lado = e.target.value; if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); if (r) abrirGaveta(r); } } },
-    h("option", { value: "right" }, "Gaveta à direita"), h("option", { value: "left" }, "Gaveta à esquerda"), h("option", { value: "both" }, "Gaveta nos dois lados"));
+  const d = new Date(S.dia + "T12:00:00");
+  $resumo = h("div", { class: "resumo" });
   $board = h("main", { class: "board" });
   $app.replaceChildren(
     h("header", { class: "top" },
-      h("h1", {}, "Programação de Frota · " + dataBR(S.dia)),
-      $busca, lado, h("span", { class: "who" }, S.perfil.nome + " · " + S.perfil.papel), ...botoes),
-    $board, h("div", { id: "gavetas" }));
+      h("div", { style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
+      h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
+      $busca, tipo, $btnAlerta,
+      h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
+      compacto, reset, ...botoes),
+    $resumo, $board, h("div", { id: "gavetas" }));
 }
 
 function cartao(r) {
-  const min = r.espera_carga_min ?? r.espera_descarga_min;
-  const card = h("div", { class: "card" + (can("status.mover") ? " drag" : ""), draggable: can("status.mover") ? "true" : false, style: "border-left-color:" + (S.tipos[r.tipo] || "#94a3b8"),
+  const min = esperaViva(r) ?? (r.espera_carga_min ?? r.espera_descarga_min);
+  const al = alertas(r);
+  return h("div", { class: "card" + (can("status.mover") ? " drag" : ""), draggable: can("status.mover") ? "true" : false, style: "border-left-color:" + (S.tipos[r.tipo] || "#94a3b8"),
     onclick: () => abrirGaveta(r),
     ondragstart: (e) => { e.dataTransfer.setData("text/plain", String(r.id)); e.dataTransfer.effectAllowed = "move"; } },
-    h("div", { class: "pl" }, r.placa_cavalo, r.placa_implemento ? " / " + r.placa_implemento : ""),
+    h("div", { class: "pl" }, r.placa_cavalo, r.placa_implemento ? " / " + r.placa_implemento : "",
+      al.length ? h("span", { class: "al " + pior(al), title: al.map((x) => x.t).join("\n") }, "⚠ " + al.length) : null),
     h("div", { class: "sub" }, [r.tipo, r.motorista].filter(Boolean).join(" · ")),
-    r.destino ? h("div", { class: "sub" }, "→ " + r.destino) : null,
-    min != null && min > 0 ? h("span", { class: "badge " + semaforo(min) }, "espera " + fmtMin(min)) : null);
-  return card;
+    r.destino ? h("div", { class: "sub dest" }, "→ " + r.destino) : null,
+    r.localizacao ? h("div", { class: "sub dest" }, "📍 " + r.localizacao) : null,
+    min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
 
 function desenharQuadro() {
   if (!$board) return;
   const q = ($busca.value || "").trim().toLowerCase();
   const ativos = S.status.filter((s) => s.ativo !== false);
+  const passa = (r) => (!S.filtro.tipo || r.tipo === S.filtro.tipo) && (!S.filtro.alerta || alertas(r).length) &&
+    (!q || [r.placa_cavalo, r.placa_implemento, r.motorista, r.destino, r.embarcador, r.obs].some((v) => (v || "").toLowerCase().includes(q)));
   const cols = ativos.map((s) => {
-    const itens = S.rows.filter((r) => r.status === s.codigo &&
-      (!q || [r.placa_cavalo, r.placa_implemento, r.motorista, r.destino, r.embarcador, r.obs].some((v) => (v || "").toLowerCase().includes(q))));
+    const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
     const col = h("section", { class: "col",
       ondragover: (e) => { if (can("status.mover")) { e.preventDefault(); col.classList.add("over"); } },
       ondragleave: () => col.classList.remove("over"),
@@ -170,6 +236,7 @@ function desenharQuadro() {
     return col;
   });
   $board.replaceChildren(...cols);
+  desenharResumo();
 }
 
 async function mover(id, novo) {

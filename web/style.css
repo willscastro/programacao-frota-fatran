@@ -36,3 +36,18 @@ table{width:100%;border-collapse:collapse}td,th{padding:6px 4px;border-bottom:1p
 #toast{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);background:#111;color:#fff;padding:8px 14px;border-radius:8px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:40;max-width:90vw}
 #toast.on{opacity:1}
 .hint{color:var(--mut);font-size:12px}
+
+.resumo{display:flex;gap:8px;padding:10px 16px 0;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;background:var(--card);border:1px solid var(--bd);font-size:12px}
+.pill b{font-size:13px}
+.pill.warn{border-color:#e2a93b}.pill.crit{border-color:#d14343}
+button.pill.on{background:#e2a93b33}
+.hint.grow{margin-left:auto}
+.seg{display:inline-flex}
+.seg button{border-radius:0;margin-left:-1px}
+.seg button:first-child{border-radius:8px 0 0 8px;margin-left:0}.seg button:last-child{border-radius:0 8px 8px 0}
+.seg button.on,header.top button.on{background:var(--pri);border-color:var(--pri);color:#fff}
+header.top select,header.top input{width:auto}
+.al{float:right;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px}
+.al.warn{background:#fde9b8;color:#7a4b00}.al.crit{background:#fad0d0;color:#8a1717}
+.compact .card .dest{display:none}
