@@ -1,0 +1,447 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Programação de Frota · Fatran</title>
+<style>
+:root{
+  --bg:#F3F4F6; --panel:#FFFFFF; --col:#E8EAEE; --ink:#111827; --mut:#6B7280; --line:#D6DAE1;
+  --acc:#2563EB; --shadow:0 1px 2px rgba(16,24,40,.08),0 1px 3px rgba(16,24,40,.06);
+  --dw:440px;
+}
+@media (prefers-color-scheme: dark){
+  :root{ --bg:#0E1014; --panel:#1A1D24; --col:#14171D; --ink:#E6E8EC; --mut:#98A2B3; --line:#2A2F3A; --acc:#6EA0FF; --shadow:0 1px 2px rgba(0,0,0,.5); }
+}
+*{box-sizing:border-box}
+html,body{height:100%}
+body{margin:0;font:14px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--ink);overflow:hidden}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+
+.top{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap}
+.brand{display:flex;align-items:center;gap:10px;margin-right:6px}
+.logo{width:34px;height:34px;border-radius:9px;background:var(--acc);color:#fff;display:grid;place-items:center;font-weight:700}
+.brand h1{font-size:15px;margin:0;line-height:1.1}
+.brand p{margin:0;font-size:11px;color:var(--mut)}
+.dateinfo{display:flex;flex-direction:column;font-size:12px;color:var(--mut);padding-right:6px;border-right:1px solid var(--line);margin-right:2px}
+.dateinfo strong{color:var(--ink);font-size:13px}
+.top input[type=search],.top select{height:34px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:0 10px}
+.top input[type=search]{width:190px}
+.top .lbl{white-space:nowrap}
+.seg button{white-space:nowrap}
+.btn{height:34px;padding:0 12px;border:1px solid var(--line);background:var(--panel);border-radius:8px}
+.btn:hover{background:var(--bg)}
+.btn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{height:32px;padding:0 11px;border:0;background:var(--panel);border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button.on{background:var(--acc);color:#fff}
+.spacer{flex:1}
+.lbl{font-size:11px;color:var(--mut)}
+
+.wrap{height:calc(100vh - var(--topH,58px));display:flex;flex-direction:column;transition:padding .28s ease}
+body.dl .wrap{padding-left:var(--dw)}
+body.dr .wrap{padding-right:var(--dw)}
+
+.summary{display:flex;gap:8px;padding:10px 16px 4px;flex-wrap:wrap;align-items:center}
+.pill{display:inline-flex;gap:6px;align-items:center;padding:4px 10px;border-radius:999px;background:var(--panel);border:1px solid var(--line);font-size:12px}
+.pill b{font-size:13px}
+.pill.warn{border-color:#E2A93B}
+.pill.crit{border-color:#D14343}
+button.pill:hover{background:var(--bg)}
+.hint{margin-left:auto;font-size:12px;color:var(--mut)}
+
+.board{flex:1;display:flex;gap:12px;overflow-x:auto;padding:8px 16px 16px;align-items:stretch;min-height:0}
+.col{flex:0 0 268px;display:flex;flex-direction:column;background:var(--col);border-radius:12px;min-height:0}
+.col.slim{flex-basis:214px}
+.col-h{display:flex;align-items:center;gap:8px;padding:10px 12px 8px;font-weight:650;font-size:12px;letter-spacing:.02em}
+.dot{width:10px;height:10px;border-radius:50%}
+.cnt{margin-left:auto;background:var(--panel);border-radius:999px;padding:0 8px;font-size:12px;min-width:24px;text-align:center;border:1px solid var(--line)}
+.col-b{flex:1;overflow-y:auto;padding:4px 8px 10px;display:flex;flex-direction:column;gap:8px;min-height:60px;border-radius:0 0 12px 12px}
+.col-b.over{outline:2px dashed var(--acc);outline-offset:-4px;background:rgba(37,99,235,.06)}
+.empty{color:var(--mut);font-size:12px;text-align:center;padding:18px 6px;border:1px dashed var(--line);border-radius:10px}
+.ph{height:56px;border-radius:10px;border:2px dashed var(--acc);background:rgba(37,99,235,.08)}
+
+.card{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--c,#999);border-radius:10px;padding:9px 10px;box-shadow:var(--shadow);cursor:grab;display:flex;flex-direction:column;gap:5px;transition:transform .12s ease,box-shadow .12s ease}
+.card:hover{box-shadow:0 4px 12px rgba(16,24,40,.14);transform:translateY(-1px)}
+.card.dragging{opacity:.4;cursor:grabbing}
+.card.sel{outline:2px solid var(--acc);outline-offset:1px}
+.r1{display:flex;align-items:center;gap:6px}
+.plate{font-weight:700;font-size:14px;letter-spacing:.04em;font-variant-numeric:tabular-nums}
+.drv{font-size:12.5px}
+.route{font-size:12px;color:var(--mut);line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.loc{font-size:12px;color:var(--mut);display:flex;align-items:center;gap:4px}
+.r4{display:flex;flex-wrap:wrap;gap:5px}
+.compact .route,.compact .loc,.compact .r4{display:none}
+.al{margin-left:auto;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px}
+.al.warn{background:#FDE9B8;color:#7A4B00}
+.al.crit{background:#FAD0D0;color:#8A1717}
+
+.chip{display:inline-flex;align-items:center;padding:1px 8px;border-radius:999px;font-size:11px;font-weight:600;color:#1F2937;background:#E5E7EB;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}
+.t-sd4{background:#D5A6BD}.t-gb4{background:#EBA8EE}.t-vdgb{background:#9CC5EA}.t-vdsd{background:#CBD5E1}.t-bit{background:#BFE3C6}
+.n-es{background:#FFF176}.n-sp{background:#9DBDF3}.n-rj{background:#E8A598}.n-sc{background:#C7D2FE}.n-ok{background:#C8EBD0}
+.w-ok{background:#D4EEDC;color:#14532D}.w-y{background:#FDE68A;color:#78350F}.w-r{background:#FCA5A5;color:#7F1D1D}.w-x{background:#C98BAA;color:#3F0F27}
+.live::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;margin-right:5px;animation:pulse 1.4s infinite}
+@keyframes pulse{50%{opacity:.25}}
+
+/* Gaveta */
+.drawer{position:fixed;top:var(--topH,58px);bottom:0;width:var(--dw);background:var(--panel);display:flex;flex-direction:column;z-index:20;transition:transform .28s ease;box-shadow:0 0 30px rgba(0,0,0,.18)}
+.drawer.left{left:0;border-right:1px solid var(--line);transform:translateX(-104%)}
+.drawer.right{right:0;border-left:1px solid var(--line);transform:translateX(104%)}
+.drawer.open{transform:none}
+.dh{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.dh .plate{font-size:18px}
+.dh select{height:32px;border:1px solid var(--line);border-radius:8px;background:var(--bg);padding:0 8px;font-weight:600}
+.ib{width:32px;height:32px;border:1px solid var(--line);border-radius:8px;background:var(--panel);display:grid;place-items:center;font-size:15px}
+.ib:hover{background:var(--bg)}
+.db{flex:1;overflow-y:auto;padding:6px 14px 20px}
+.sec{padding:12px 0 6px;border-bottom:1px solid var(--line)}
+.sec:last-child{border-bottom:0}
+.sec h3{margin:0 0 8px;font-size:11px;text-transform:uppercase;letter-spacing:.08em;color:var(--mut)}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px}
+.f{display:flex;flex-direction:column;gap:3px}
+.f.full{grid-column:1/-1}
+.f span{font-size:11px;color:var(--mut)}
+.f input,.f select,.f textarea{border:1px solid var(--line);border-radius:7px;background:var(--bg);padding:6px 8px;min-width:0;width:100%}
+.f textarea{min-height:64px;resize:vertical}
+.wait{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--mut)}
+.alertbox{margin:10px 0 0;padding:8px 10px;border-radius:9px;font-size:12.5px}
+.alertbox ul{margin:4px 0 0;padding-left:18px}
+.alertbox.warn{background:#FFF6DB;color:#6B4400;border:1px solid #EFD27A}
+.alertbox.crit{background:#FDE6E6;color:#7A1414;border:1px solid #F0A6A6}
+.tl{list-style:none;margin:0;padding:0}
+.tl li{position:relative;padding:0 0 10px 16px;font-size:12.5px;border-left:2px solid var(--line);margin-left:4px}
+.tl li::before{content:"";position:absolute;left:-6px;top:3px;width:10px;height:10px;border-radius:50%;background:var(--acc)}
+.tl small{display:block;color:var(--mut)}
+.sidepick{display:flex;gap:6px;align-items:center}
+
+#toast{position:fixed;left:50%;bottom:18px;transform:translateX(-50%) translateY(80px);background:#111827;color:#fff;padding:10px 14px;border-radius:10px;display:flex;gap:12px;align-items:center;z-index:50;transition:transform .25s ease;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#toast.show{transform:translateX(-50%)}
+#toast button{background:transparent;border:1px solid #fff5;color:#fff;border-radius:6px;padding:2px 10px}
+
+@media (max-width:900px){
+  :root{--dw:100vw}
+  body.dl .wrap,body.dr .wrap{padding:0}
+  .top input[type=search]{width:100%}
+  .hint{display:none}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="top" id="top">
+  <div class="brand"><div class="logo">F</div><div><h1>Programação de Frota</h1><p>Fatran · protótipo de design</p></div></div>
+  <div class="dateinfo"><strong>Segunda, 26/10/2026</strong><span>Posição das 17:00</span></div>
+  <input type="search" id="q" placeholder="Buscar placa, motorista, destino…" aria-label="Buscar">
+  <select id="ftipo" aria-label="Tipo do conjunto"><option value="">Todos os tipos</option></select>
+  <button class="btn" id="bAlert" aria-pressed="false">⚠ Só com alerta</button>
+  <span class="spacer"></span>
+  <span class="lbl">Gaveta abre:</span>
+  <div class="seg" id="sideSeg" role="group" aria-label="Lado em que a gaveta abre">
+    <button data-m="left" title="Abrir pela esquerda">◀ Esquerda</button>
+    <button data-m="both" title="Abrir dos dois lados">◀▶ Ambos</button>
+    <button data-m="right" title="Abrir pela direita" class="on">Direita ▶</button>
+  </div>
+  <button class="btn" id="bCompact" aria-pressed="false">Compacto</button>
+  <button class="btn" id="bReset" title="Restaurar os dados de 26/10" aria-label="Restaurar os dados de 26/10">↺</button>
+</header>
+
+<div class="wrap" id="wrap">
+  <div class="summary" id="summary"></div>
+  <main class="board" id="board"></main>
+</div>
+
+<aside class="drawer left" id="dL" aria-hidden="true"></aside>
+<aside class="drawer right" id="dR" aria-hidden="true"></aside>
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+const DATA = [{"id": 1, "placa": "TOR2D20", "implemento": "SGI2C61", "tipo": "4º SD", "motorista": "ADÃO", "dataProg": "2026-10-23", "chegCarga": "2026-10-23", "hrChegCarga": "08:00", "dataCarreg": "2026-10-23", "hrCarreg": "11:35", "embarcador": "SUB MARINI SP", "destino": "CARIACICA ES", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": "13:50", "status": "AG. DESCARGA", "posicao": "17:00", "localizacao": "CARIACICA - ES", "obs": "", "proximaCarga": "27/10 IMERYS X POXPUR 29/10", "extra": ""}, {"id": 2, "placa": "QRL7I54", "implemento": "SGI5A30", "tipo": "4º SD", "motorista": "LEONARDO SANTOS", "dataProg": "2026-10-22", "chegCarga": "2026-10-22", "hrChegCarga": "12:20", "dataCarreg": "2026-10-22", "hrCarreg": "14:05", "embarcador": "CASA DE MÃE", "destino": "PERIM E RONDELI", "dataProgDescarga": "2026-10-27", "dataDescarga": null, "hrDescarga": null, "status": "EM TRÂNSITO", "posicao": "17:00", "localizacao": "CACHOEIRO- ES", "obs": "DESCARREGA RONDELLI 27/10", "proximaCarga": "27/10 - STILE - TRANSFRITZ - VILA VELHA x NEXUS - ARUJA/SP 29/10", "extra": "30/10 - BUFALO - EMBU DAS ARTES x ATACADÃO SERRA/ES - 04/11 - ATACADÃO VILA VELHA 05/11 PROTOCOLOS: 564086 E 564087 OBSERVAÇÃO ENTREGA EM VITÓRIA PRECISA CHEGAR ANTES DAS 6 DA MANHÃ."}, {"id": 3, "placa": "TOK6H67", "implemento": "TOG0D96", "tipo": "4º SD", "motorista": "LUCIANO", "dataProg": "2026-10-26", "chegCarga": "2026-10-26", "hrChegCarga": "10:45", "dataCarreg": null, "hrCarreg": null, "embarcador": "IMERYS 2", "destino": "TECNOPERFIL - JOINVILLE SC", "dataProgDescarga": "2026-10-29", "dataDescarga": null, "hrDescarga": null, "status": "AG. CARREGAMENTO", "posicao": "17:00", "localizacao": "CACHOEIRO- ES", "obs": "", "proximaCarga": "A DEFINIR SC 28/10", "extra": ""}, {"id": 4, "placa": "TOH6A96", "implemento": "SFT2I58", "tipo": "4º SD", "motorista": "MARCELO", "dataProg": "2026-10-22", "chegCarga": "2026-10-22", "hrChegCarga": "14:21", "dataCarreg": "2026-10-23", "hrCarreg": "06:49", "embarcador": "EUCATEX SALTO", "destino": "BELEM - CARIACICA ES", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": null, "status": "PROGRAMADO", "posicao": "17:00", "localizacao": "CACHOEIRO- ES", "obs": "DESCARREGA 27/10", "proximaCarga": "27/10 CARBOMIX X MINER SAN 29/10", "extra": ""}, {"id": 5, "placa": "TOR2D26", "implemento": "TOF8A95", "tipo": "4º SD", "motorista": "MARIO", "dataProg": "2026-10-23", "chegCarga": "2026-10-23", "hrChegCarga": "18:40", "dataCarreg": "2026-10-24", "hrCarreg": "07:30", "embarcador": "SUB - PIRACICABA - SP", "destino": "SUB LINHARES - ES", "dataProgDescarga": "2026-10-27", "dataDescarga": null, "hrDescarga": null, "status": "DSR", "posicao": "17:00", "localizacao": "CACHOEIRO- ES", "obs": "DESCARREGA 27/10", "proximaCarga": "A DEFINIR ES 27/10", "extra": ""}, {"id": 6, "placa": "RQP3E15", "implemento": "TOF9C87", "tipo": "4º SD", "motorista": "JOSÉ ANTONIO", "dataProg": "2026-10-26", "chegCarga": "2026-10-26", "hrChegCarga": null, "dataCarreg": null, "hrCarreg": null, "embarcador": "AGUARDANDO PROGRAMAÇÃO DE CARGA", "destino": "AGUARDANDO PROGRAMAÇÃO DE CARGA", "dataProgDescarga": null, "dataDescarga": null, "hrDescarga": null, "status": "AG. PROGRAMAÇÃO", "posicao": "17:00", "localizacao": "EMBU DAS ARTES SP", "obs": "AGUARDANDO PROGRAMAÇÃO DE CARGA", "proximaCarga": "A DEFINIR SP 26/10", "extra": ""}, {"id": 7, "placa": "RQP-3E15", "implemento": "TOF9C87", "tipo": "4º SD", "motorista": "JOSÉ ANTONIO", "dataProg": "2026-09-18", "chegCarga": "2026-09-18", "hrChegCarga": "09:15", "dataCarreg": "2026-09-18", "hrCarreg": "16:49", "embarcador": "CARBOMIX - CACHOEIRO ES", "destino": "MINERIOS OURO BRANCO - SÃO PAULO + PALETES", "dataProgDescarga": "2026-09-21", "dataDescarga": "2026-09-21", "hrDescarga": "05:09", "status": "ENTREGUE", "posicao": "08:20", "localizacao": "", "obs": "", "proximaCarga": "A DEFINIR ES 30/10", "extra": ""}, {"id": 8, "placa": "RBG5J77", "implemento": "SFP4F71", "tipo": "VD SD", "motorista": "MARCOS VINICIUS", "dataProg": "2026-10-25", "chegCarga": "2026-10-25", "hrChegCarga": "07:00", "dataCarreg": "2026-10-25", "hrCarreg": "09:20", "embarcador": "IMARCAL - VARGEM ALTA", "destino": "IBRATIN - FRANCO DA ROCHA SP", "dataProgDescarga": "2026-10-27", "dataDescarga": null, "hrDescarga": null, "status": "EM MANUTENÇÃO", "posicao": "17:00", "localizacao": "CACHOEIRO - ES", "obs": "AGUARDANDO MANUTENÇÃO - VIAJA 27/10 ENTREGA 28/10", "proximaCarga": "A DEFINIR SP 28/10", "extra": ""}, {"id": 9, "placa": "RQO6J04", "implemento": "RQN0I89", "tipo": "VD SD", "motorista": "WALDECI MION", "dataProg": "2026-10-22", "chegCarga": "2026-10-22", "hrChegCarga": "21:49", "dataCarreg": "2026-10-23", "hrCarreg": "12:05", "embarcador": "EUCATEX SALTO  BC 1419349", "destino": "3 ENTREGAS - CARIACICA, SERRA, VILA VELHA ES", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": null, "status": "EM TRÂNSITO", "posicao": "17:00", "localizacao": "CACHOEIRO - ES", "obs": "DESCARREGA 27/10", "proximaCarga": "28 /10 IMARCAL X IBRATIN 30/10", "extra": ""}, {"id": 10, "placa": "RQP8I36", "implemento": "RBF6C84", "tipo": "VD SD", "motorista": "ALEXANDRE", "dataProg": "2026-10-26", "chegCarga": "2026-10-26", "hrChegCarga": "14:17", "dataCarreg": null, "hrCarreg": null, "embarcador": "SUB - AMAPRO SP", "destino": "SERRA ES", "dataProgDescarga": "2026-10-29", "dataDescarga": null, "hrDescarga": null, "status": "AG. CARREGAMENTO", "posicao": "17:00", "localizacao": "AMPARO SP", "obs": "", "proximaCarga": "", "extra": ""}, {"id": 11, "placa": "SGF3D51", "implemento": "", "tipo": "BITRUCK", "motorista": "FABRICIO", "dataProg": "2026-10-26", "chegCarga": "2026-10-26", "hrChegCarga": "10:15", "dataCarreg": "2026-10-26", "hrCarreg": "12:45", "embarcador": "ITA PLANA - CACHOEIRO ES", "destino": "BRAZINCO - SP", "dataProgDescarga": "2026-10-28", "dataDescarga": null, "hrDescarga": null, "status": "PERNOITE", "posicao": "17:00", "localizacao": "CACHOEIRO - ES", "obs": "DESCARREGA 28/10", "proximaCarga": "A DEFINIR SP 28/10", "extra": ""}, {"id": 12, "placa": "RQP3E27", "implemento": "RBC6I42", "tipo": "VD GB", "motorista": "MOISES", "dataProg": "2026-10-27", "chegCarga": "2026-10-27", "hrChegCarga": null, "dataCarreg": null, "hrCarreg": null, "embarcador": "IMERYS 2 - CACHOEIRO ES", "destino": "ACO DRENAGEM - JACAREI SP", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": null, "status": "EM TRÂNSITO", "posicao": "17:00", "localizacao": "ALEGRE ES", "obs": "", "proximaCarga": "A DEFINIR ES 26/10", "extra": ""}, {"id": 13, "placa": "RBC7G46", "implemento": "RQN6G89", "tipo": "VD GB", "motorista": "NEILSON", "dataProg": "2026-10-24", "chegCarga": "2026-10-24", "hrChegCarga": "09:00", "dataCarreg": "2026-10-24", "hrCarreg": "15:35", "embarcador": "IMARCAL - VARGEM ALTA", "destino": "IBRATIN - FRANCO DA ROCHA SP", "dataProgDescarga": "2026-10-27", "dataDescarga": null, "hrDescarga": null, "status": "PERNOITE", "posicao": "17:00", "localizacao": "PINDA SP", "obs": "ENTREGA NA TERÇA-FEIRA", "proximaCarga": "A DEFINIR SP 27/10", "extra": ""}, {"id": 14, "placa": "RQT7F02", "implemento": "UNN2F34", "tipo": "4º GB", "motorista": "NANSUY", "dataProg": "2026-10-26", "chegCarga": "2026-10-26", "hrChegCarga": "15:28", "dataCarreg": null, "hrCarreg": null, "embarcador": "SIMEC - CARIACICA ES OT 094102", "destino": "TRUCKVAN + PAULISTELL - GUARULHOS X SÃO PAULO SP", "dataProgDescarga": "2026-10-28", "dataDescarga": null, "hrDescarga": null, "status": "AG. CARREGAMENTO", "posicao": "17:00", "localizacao": "CARIACICA - ES", "obs": "", "proximaCarga": "A DEFINIR SP 28/10", "extra": ""}, {"id": 15, "placa": "SFR2A42", "implemento": "SGJ3D53", "tipo": "4º GB", "motorista": "MAURO", "dataProg": "2026-10-23", "chegCarga": "2026-10-23", "hrChegCarga": "06:00", "dataCarreg": "2026-10-23", "hrCarreg": "13:50", "embarcador": "SIMEC - CARIACICA ES", "destino": "4 ENTREGAS - GUARULHOS, SÃO PAULO, MOGI DAS CRUZES SP", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": null, "status": "EM TRÂNSITO", "posicao": "17:00", "localizacao": "ITATIAIA - RJ", "obs": "PREVISÃO DE DESCARGA 27/10", "proximaCarga": "A DEFINIR SP 27/10", "extra": ""}, {"id": 16, "placa": "RQO9B49", "implemento": "SGJ3D46", "tipo": "4º GB", "motorista": "WESCLEY", "dataProg": "2026-10-23", "chegCarga": "2026-10-23", "hrChegCarga": "17:05", "dataCarreg": "2026-10-24", "hrCarreg": "08:00", "embarcador": "SIMEC PINDA SP", "destino": "RDG SERRA ES", "dataProgDescarga": "2026-10-26", "dataDescarga": null, "hrDescarga": null, "status": "DSR", "posicao": "17:00", "localizacao": "CACHOEIRO - ES", "obs": "DESCARREGA 27/10", "proximaCarga": "A DEFINIR ES 26/10", "extra": ""}, {"id": 17, "placa": "RQV4E14", "implemento": "RBC7G52", "tipo": "VD GB", "motorista": "", "dataProg": null, "chegCarga": null, "hrChegCarga": null, "dataCarreg": null, "hrCarreg": null, "embarcador": "MANUTENÇÃO DAF- VIANA", "destino": "MANUTENÇÃO DAF- VIANA", "dataProgDescarga": null, "dataDescarga": null, "hrDescarga": null, "status": "EM MANUTENÇÃO", "posicao": null, "localizacao": "", "obs": "CARRO NA DAF PARA AVALIAR OSPROBLEMAS GERADOS A PARTIR DA COLISÃO. SEM PREVISÃO DE LIBERAÇÃO", "proximaCarga": "SEM PREVISÃO", "extra": ""}];
+
+const STATUS = [
+  ['AG. PROGRAMAÇÃO','#94A3B8'],['PROGRAMADO','#6366F1'],['AG. CARREGAMENTO','#F59E0B'],['EM TRÂNSITO','#2563EB'],
+  ['PERNOITE','#7C3AED'],['DSR','#0EA5E9'],['AG. DESCARGA','#F97316'],['AG. TROCA DE NOTA','#CA8A04'],
+  ['ENTREGUE','#16A34A'],['EM MANUTENÇÃO','#DC2626']
+];
+const STATUS_COLOR = Object.fromEntries(STATUS);
+const TIPOS = ['4º SD','4º GB','VD SD','VD GB','BITRUCK'];
+const TIPO_CLASS = {'4º SD':'t-sd4','4º GB':'t-gb4','VD SD':'t-vdsd','VD GB':'t-vdgb','BITRUCK':'t-bit','BITR GB':'t-bit'};
+const REF = new Date(2026,9,26,17,0); // relógio de referência do protótipo: 26/10/2026 17:00
+const KEY = 'frota-proto-v1';
+
+/* ---------- utilidades ---------- */
+const $ = s => document.querySelector(s);
+const esc = v => String(v ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const normPlate = p => String(p||'').toUpperCase().replace(/[^A-Z0-9]/g,'');
+const fmtD = d => d ? d.split('-').reverse().slice(0,2).join('/') : '';
+function pdt(date,time){ if(!date||!time) return null; const [y,m,d]=date.split('-').map(Number); const [h,mi]=time.split(':').map(Number); return new Date(y,m-1,d,h,mi); }
+function fmtDur(min){ const d=Math.floor(min/1440), h=Math.floor((min%1440)/60), m=min%60; return (d?d+'d ':'')+h+'h '+String(m).padStart(2,'0')+'min'; }
+const waitCls = m => m<120?'w-ok':m<300?'w-y':m<420?'w-r':'w-x';
+const nowLabel = () => { const n=new Date(); return String(n.getDate()).padStart(2,'0')+'/'+String(n.getMonth()+1).padStart(2,'0')+' '+String(n.getHours()).padStart(2,'0')+':'+String(n.getMinutes()).padStart(2,'0'); };
+const clone = o => JSON.parse(JSON.stringify(o));
+
+/* ---------- estado ---------- */
+let cards = [], sel = null, mode = 'right', undoStack = [], filters = {q:'',tipo:'',alert:false}, compact = false;
+
+function initialCards(){
+  return clone(DATA).map(c => ({...c, eventos:[{em:'26/10 17:00', texto:'Posição inicial: '+c.status}]}));
+}
+function load(){
+  try{ const s = JSON.parse(localStorage.getItem(KEY)||'null'); if(s && Array.isArray(s.cards)){ cards=s.cards; mode=s.mode||'right'; return; } }catch(e){}
+  cards = initialCards();
+}
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify({cards,mode})); }catch(e){} }
+
+/* ---------- regras: esperas e alertas ---------- */
+function waits(c){
+  const out = {carreg:null, desc:null};
+  const s1 = pdt(c.chegCarga,c.hrChegCarga);
+  if(s1){
+    let e = pdt(c.dataCarreg,c.hrCarreg), live=false;
+    if(!e && c.status==='AG. CARREGAMENTO'){ e=REF; live=true; }
+    if(e && e>=s1) out.carreg = {min:Math.round((e-s1)/60000), live};
+  }
+  const s2 = pdt(c.dataDescarga||c.dataProgDescarga, c.hrDescarga);
+  if(s2 && c.status==='AG. DESCARGA' && REF>=s2) out.desc = {min:Math.round((REF-s2)/60000), live:true};
+  return out;
+}
+function alerts(c){
+  const a = [];
+  const dup = cards.filter(x => normPlate(x.placa)===normPlate(c.placa)).length>1;
+  if(dup) a.push({s:'crit',t:'Placa duplicada na programação ('+normPlate(c.placa)+')'+(c.status==='ENTREGUE'?' — registro antigo, deve ser arquivado':'')});
+  if(c.dataProgDescarga && c.chegCarga && c.dataProgDescarga < c.chegCarga) a.push({s:'crit',t:'Previsão de entrega ('+fmtD(c.dataProgDescarga)+') anterior à chegada no carregamento ('+fmtD(c.chegCarga)+')'});
+  const found = (c.obs||'').match(/\b\d{1,2}\/\d{1,2}\b/g);
+  if(found && c.dataProgDescarga && c.status!=='ENTREGUE'){
+    const prev = fmtD(c.dataProgDescarga).replace(/\b0(\d)/g,'$1');
+    if(!found.some(x => x.replace(/\b0(\d)/g,'$1')===prev)) a.push({s:'warn',t:'A observação cita '+found.join(', ')+', mas a previsão de entrega é '+fmtD(c.dataProgDescarga)});
+  }
+  if(c.status==='EM MANUTENÇÃO' && c.dataCarreg) a.push({s:'warn',t:'Em manutenção com carga já carregada — confirmar o status'});
+  if(!c.proximaCarga && c.status!=='EM MANUTENÇÃO' && c.status!=='ENTREGUE') a.push({s:'warn',t:'Sem próxima carga definida'});
+  const w = waits(c);
+  [['Espera no carregamento',w.carreg],['Espera na descarga',w.desc]].forEach(([n,x])=>{
+    if(x && x.live && x.min>=300) a.push({s:x.min>=420?'crit':'warn',t:n+' em '+fmtDur(x.min)});
+  });
+  return a;
+}
+const worst = al => al.some(x=>x.s==='crit') ? 'crit' : al.length ? 'warn' : '';
+
+/* ---------- renderização do quadro ---------- */
+const nextChip = t => {
+  if(!t) return '';
+  const m = t.match(/A DEFINIR\s+(ES|SP|RJ|SC)/i);
+  const cls = m ? 'n-'+m[1].toLowerCase() : 'n-ok';
+  return '<span class="chip '+cls+'" title="Próxima carga: '+esc(t)+'">Próx.: '+esc(t.length>34?t.slice(0,33)+'…':t)+'</span>';
+};
+const pin = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12z"/><circle cx="12" cy="10" r="2.5"/></svg>';
+
+function visible(c){
+  const q = filters.q.trim().toLowerCase();
+  if(q && ![c.placa,c.motorista,c.destino,c.embarcador,c.localizacao,c.implemento].join(' ').toLowerCase().includes(q)) return false;
+  if(filters.tipo && c.tipo!==filters.tipo) return false;
+  if(filters.alert && !alerts(c).length) return false;
+  return true;
+}
+function cardHTML(c){
+  const al = alerts(c), w = waits(c), wk = w.desc || w.carreg;
+  const live = (w.desc && w.desc.live) || (w.carreg && w.carreg.live);
+  const route = c.embarcador===c.destino ? c.embarcador : [c.embarcador,c.destino].filter(Boolean).join(' → ');
+  const badge = (live && wk) ? '<span class="chip '+waitCls(wk.min)+' live" title="Espera em andamento">'+fmtDur(wk.min)+'</span>' : '';
+  return '<article class="card'+(sel===c.id?' sel':'')+'" draggable="true" data-id="'+c.id+'" style="--c:'+(STATUS_COLOR[c.status]||'#999')+'" tabindex="0" aria-label="'+esc(c.placa+' '+c.motorista)+'">'
+    +'<div class="r1"><span class="plate">'+esc(c.placa)+'</span><span class="chip '+(TIPO_CLASS[c.tipo]||'')+'">'+esc(c.tipo||'—')+'</span>'
+    +(al.length?'<span class="al '+worst(al)+'" title="'+esc(al.map(x=>x.t).join('\n'))+'">⚠ '+al.length+'</span>':'')+'</div>'
+    +'<div class="drv">'+esc(c.motorista||'Sem motorista')+'</div>'
+    +(route?'<div class="route">'+esc(route)+'</div>':'')
+    +(c.localizacao?'<div class="loc">'+pin+esc(c.localizacao)+(c.posicao?' · '+esc(c.posicao):'')+'</div>':'')
+    +((badge||c.proximaCarga)?'<div class="r4">'+badge+nextChip(c.proximaCarga)+'</div>':'')
+    +'</article>';
+}
+function renderBoard(){
+  const b = $('#board'), keepX = b.scrollLeft, keepY = [...b.querySelectorAll('.col-b')].map(x=>x.scrollTop);
+  b.innerHTML = STATUS.map(([name,color]) => {
+    const list = cards.filter(c => c.status===name && visible(c));
+    const total = cards.filter(c => c.status===name).length;
+    return '<section class="col'+(name==='AG. TROCA DE NOTA'?' slim':'')+'" data-status="'+name+'">'
+      +'<div class="col-h"><span class="dot" style="background:'+color+'"></span>'+name+'<span class="cnt">'+(list.length===total?total:list.length+'/'+total)+'</span></div>'
+      +'<div class="col-b" data-status="'+name+'">'+(list.length?list.map(cardHTML).join(''):'<div class="empty">Solte um veículo aqui</div>')+'</div></section>';
+  }).join('');
+  b.scrollLeft = keepX; b.querySelectorAll('.col-b').forEach((x,i)=>x.scrollTop=keepY[i]||0);
+  renderSummary();
+}
+function renderSummary(){
+  const ativos = cards.filter(c=>c.status!=='ENTREGUE');
+  const n = s => cards.filter(c=>c.status===s).length;
+  const crit = cards.filter(c=>{const w=waits(c);return [w.carreg,w.desc].some(x=>x&&x.live&&x.min>=300);}).length;
+  const comAlerta = cards.filter(c=>alerts(c).length).length;
+  $('#summary').innerHTML =
+    '<span class="pill"><b>'+ativos.length+'</b> conjuntos ativos</span>'
+   +'<span class="pill"><b>'+n('EM TRÂNSITO')+'</b> em trânsito</span>'
+   +'<span class="pill"><b>'+(n('AG. CARREGAMENTO')+n('AG. DESCARGA'))+'</b> aguardando carga/descarga</span>'
+   +'<span class="pill '+(n('EM MANUTENÇÃO')?'crit':'')+'"><b>'+n('EM MANUTENÇÃO')+'</b> em manutenção</span>'
+   +'<span class="pill '+(crit?'crit':'')+'"><b>'+crit+'</b> esperas ≥ 5h</span>'
+   +'<button class="pill '+(comAlerta?'warn':'')+'" id="pAlert"><b>'+comAlerta+'</b> com alerta ⚠</button>'
+   +'<span class="hint">Arraste os cartões para mudar o status · clique para abrir os detalhes</span>';
+  const pa = $('#pAlert'); if(pa) pa.onclick = () => { filters.alert=!filters.alert; syncAlertBtn(); renderBoard(); };
+}
+
+/* ---------- movimento e desfazer ---------- */
+function snapshot(){ undoStack.push(clone(cards)); if(undoStack.length>30) undoStack.shift(); }
+function moveCard(id,newStatus,beforeId,origem){
+  const c = cards.find(x=>x.id===id); if(!c) return;
+  const old = c.status;
+  if(old===newStatus && (!beforeId || beforeId===id)) return;
+  snapshot();
+  cards = cards.filter(x=>x.id!==id);
+  c.status = newStatus;
+  const idx = beforeId ? cards.findIndex(x=>x.id===beforeId) : -1;
+  if(idx>=0) cards.splice(idx,0,c); else cards.push(c);
+  if(old!==newStatus){
+    c.eventos = c.eventos||[]; c.eventos.unshift({em:nowLabel(), texto:old+' → '+newStatus+(origem?' ('+origem+')':'')});
+    toast(c.placa+': '+old+' → '+newStatus, true);
+  }
+  save(); renderBoard(); renderDrawers();
+}
+function undo(){
+  const prev = undoStack.pop(); if(!prev) return;
+  cards = prev; save(); renderBoard(); renderDrawers(); toast('Alteração desfeita');
+}
+let toastT;
+function toast(msg,withUndo){
+  const t = $('#toast');
+  t.innerHTML = '<span>'+esc(msg)+'</span>'+(withUndo?'<button id="tUndo">Desfazer</button>':'');
+  t.classList.add('show'); clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('show'), 5000);
+  const u = $('#tUndo'); if(u) u.onclick = () => { undo(); t.classList.remove('show'); };
+}
+
+/* ---------- gaveta ---------- */
+const F = (c,f,label,type,cls) => '<label class="f '+(cls||'')+'"><span>'+label+'</span><input type="'+(type||'text')+'" data-f="'+f+'" value="'+esc(c[f]||'')+'"></label>';
+const TA = (c,f,label) => '<label class="f full"><span>'+label+'</span><textarea data-f="'+f+'">'+esc(c[f]||'')+'</textarea></label>';
+const waitRow = (x,label) => x ? '<div class="wait"><span>'+label+':</span><span class="chip '+waitCls(x.min)+(x.live?' live':'')+'">'+fmtDur(x.min)+(x.live?' (em andamento)':'')+'</span></div>' : '<div class="wait"><span>'+label+': —</span></div>';
+
+const secConj = c => '<section class="sec"><h3>Conjunto e motorista</h3><div class="grid">'
+  +F(c,'placa','Placa do cavalo')+F(c,'implemento','Implemento')
+  +'<label class="f"><span>Tipo do conjunto</span><select data-f="tipo">'+TIPOS.map(t=>'<option'+(t===c.tipo?' selected':'')+'>'+t+'</option>').join('')+'</select></label>'
+  +F(c,'motorista','Motorista')
+  +F(c,'localizacao','Localização atual','text','full')
+  +F(c,'posicao','Hora da posição','time')+'</div></section>';
+const secCarreg = c => '<section class="sec"><h3>Carregamento</h3><div class="grid">'
+  +F(c,'embarcador','Embarcador','text','full')
+  +F(c,'dataProg','Data da programação','date','full')
+  +F(c,'chegCarga','Chegada (data)','date')+F(c,'hrChegCarga','Chegada (hora)','time')
+  +F(c,'dataCarreg','Carregou (data)','date')+F(c,'hrCarreg','Carregou (hora)','time')
+  +'</div>'+waitRow(waits(c).carreg,'Espera no carregamento')+'</section>';
+const secDesc = c => '<section class="sec"><h3>Descarga</h3><div class="grid">'
+  +F(c,'destino','Destino','text','full')
+  +F(c,'dataProgDescarga','Previsão de entrega','date','full')
+  +F(c,'dataDescarga','Chegada (data)','date')+F(c,'hrDescarga','Chegada (hora)','time')
+  +'</div>'+waitRow(waits(c).desc,'Espera na descarga')+'</section>';
+const secProx = c => '<section class="sec"><h3>Próxima carga</h3><div class="grid">'+F(c,'proximaCarga','Data · embarcador × destino','text','full')+'</div><div class="wait">'+nextChip(c.proximaCarga)+'</div></section>';
+const secObs = c => '<section class="sec"><h3>Observações</h3><div class="grid">'+TA(c,'obs','Observação')+(c.extra?TA(c,'extra','Anotações extras'):'')+'</div></section>';
+const secHist = c => '<section class="sec"><h3>Histórico de status</h3><ul class="tl">'+(c.eventos||[]).map(e=>'<li>'+esc(e.texto)+'<small>'+esc(e.em)+'</small></li>').join('')+'</ul></section>';
+const alertBox = c => { const al=alerts(c); return al.length ? '<div class="alertbox '+worst(al)+'"><b>⚠ '+al.length+' alerta'+(al.length>1?'s':'')+'</b><ul>'+al.map(x=>'<li>'+esc(x.t)+'</li>').join('')+'</ul></div>' : ''; };
+const statusSel = c => '<select data-f="status" aria-label="Status">'+STATUS.map(([s])=>'<option'+(s===c.status?' selected':'')+'>'+s+'</option>').join('')+'</select>';
+const headL = (c,full) => '<div class="dh"><span class="plate">'+esc(c.placa)+'</span><span class="chip '+(TIPO_CLASS[c.tipo]||'')+'">'+esc(c.tipo)+'</span>'
+  +(full?'<span style="flex:1"></span>'+statusSel(c)+navBtns():'<span style="flex:1"></span><button class="ib" data-act="close" title="Fechar (Esc)">✕</button>')+'</div>';
+const navBtns = () => '<button class="ib" data-act="prev" title="Anterior (←)">‹</button><button class="ib" data-act="next" title="Próximo (→)">›</button><button class="ib" data-act="close" title="Fechar (Esc)">✕</button>';
+const headR = c => '<div class="dh"><span style="font-weight:650;white-space:nowrap">Viagem</span><span style="flex:1"></span>'+statusSel(c)+navBtns()+'</div>';
+
+function renderDrawers(){
+  const c = cards.find(x=>x.id===sel), L=$('#dL'), R=$('#dR');
+  document.body.classList.toggle('dl', !!c && (mode==='left'||mode==='both'));
+  document.body.classList.toggle('dr', !!c && (mode==='right'||mode==='both'));
+  document.documentElement.style.setProperty('--dw', mode==='both' ? '410px' : '440px');
+  L.classList.toggle('open', !!c && (mode==='left'||mode==='both'));
+  R.classList.toggle('open', !!c && (mode==='right'||mode==='both'));
+  L.setAttribute('aria-hidden', !L.classList.contains('open')); R.setAttribute('aria-hidden', !R.classList.contains('open'));
+  if(!c) return;
+  const all = alertBox(c)+secConj(c)+secCarreg(c)+secDesc(c)+secProx(c)+secObs(c)+secHist(c);
+  if(mode==='left')  L.innerHTML = headL(c,true)+'<div class="db">'+all+'</div>';
+  if(mode==='right') R.innerHTML = headL(c,true)+'<div class="db">'+all+'</div>';
+  if(mode==='both'){
+    L.innerHTML = headL(c,false)+'<div class="db">'+secConj(c)+secCarreg(c)+'</div>';
+    R.innerHTML = headR(c)+'<div class="db">'+alertBox(c)+secDesc(c)+secProx(c)+secObs(c)+secHist(c)+'</div>';
+  }
+}
+function openCard(id){ sel=id; renderBoard(); renderDrawers(); }
+function closeDrawer(){ sel=null; renderBoard(); renderDrawers(); }
+function navigate(dir){
+  const ids = [...document.querySelectorAll('#board .card')].map(e=>+e.dataset.id); if(!ids.length) return;
+  const i = ids.indexOf(sel); const n = ids[(i+dir+ids.length)%ids.length]; openCard(n);
+  const el = document.querySelector('.card[data-id="'+n+'"]'); if(el) el.scrollIntoView({block:'nearest',inline:'nearest',behavior:'smooth'});
+}
+function setMode(m){
+  mode = m; save();
+  document.querySelectorAll('#sideSeg button').forEach(b=>b.classList.toggle('on', b.dataset.m===m));
+  renderDrawers();
+}
+function updateField(f,v){
+  const c = cards.find(x=>x.id===sel); if(!c) return;
+  if(f==='status'){ moveCard(c.id, v, null, 'gaveta'); return; }
+  c[f] = v===''? (f.match(/^(data|hr|posicao)/)? null : '') : v;
+  save(); renderBoard(); renderDrawers();
+}
+
+/* ---------- eventos ---------- */
+const board = $('#board');
+board.addEventListener('click', e => { const c = e.target.closest('.card'); if(c) openCard(+c.dataset.id); });
+board.addEventListener('keydown', e => { if((e.key==='Enter'||e.key===' ') && e.target.classList.contains('card')){ e.preventDefault(); openCard(+e.target.dataset.id); } });
+
+let dragId = null;
+board.addEventListener('dragstart', e => {
+  const c = e.target.closest('.card'); if(!c) return;
+  dragId = +c.dataset.id; c.classList.add('dragging');
+  e.dataTransfer.effectAllowed='move'; e.dataTransfer.setData('text/plain', String(dragId));
+});
+board.addEventListener('dragend', () => { dragId=null; clearDrop(); document.querySelectorAll('.dragging').forEach(x=>x.classList.remove('dragging')); });
+function clearDrop(){ document.querySelectorAll('.ph').forEach(x=>x.remove()); document.querySelectorAll('.col-b.over').forEach(x=>x.classList.remove('over')); }
+board.addEventListener('dragover', e => {
+  const body = e.target.closest('.col-b'); if(!body || dragId===null) return;
+  e.preventDefault(); e.dataTransfer.dropEffect='move';
+  if(!body.classList.contains('over')){ clearDrop(); body.classList.add('over'); }
+  body.querySelector('.empty')?.remove();
+  let ph = body.querySelector('.ph'); if(!ph){ ph = document.createElement('div'); ph.className='ph'; }
+  const others = [...body.querySelectorAll('.card:not(.dragging)')];
+  const after = others.find(el => { const r=el.getBoundingClientRect(); return e.clientY < r.top + r.height/2; });
+  if(after) body.insertBefore(ph, after); else body.appendChild(ph);
+});
+board.addEventListener('drop', e => {
+  const body = e.target.closest('.col-b'); if(!body || dragId===null) return;
+  e.preventDefault();
+  const ph = body.querySelector('.ph'); const next = ph && ph.nextElementSibling;
+  const beforeId = next && next.classList.contains('card') ? +next.dataset.id : null;
+  const id = dragId; dragId = null; clearDrop();
+  moveCard(id, body.dataset.status, beforeId, 'arrastar');
+});
+
+document.addEventListener('click', e => {
+  const a = e.target.closest('[data-act]'); if(!a) return;
+  if(a.dataset.act==='close') closeDrawer();
+  if(a.dataset.act==='prev') navigate(-1);
+  if(a.dataset.act==='next') navigate(1);
+});
+['#dL','#dR'].forEach(s => $(s).addEventListener('change', e => { const f = e.target.dataset.f; if(f) updateField(f, e.target.value); }));
+document.addEventListener('keydown', e => {
+  const typing = /INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName);
+  if(e.key==='Escape' && sel!==null) closeDrawer();
+  if(!typing && sel!==null && e.key==='ArrowRight') navigate(1);
+  if(!typing && sel!==null && e.key==='ArrowLeft') navigate(-1);
+  if((e.ctrlKey||e.metaKey) && e.key.toLowerCase()==='z' && !typing){ e.preventDefault(); undo(); }
+});
+
+$('#q').addEventListener('input', e => { filters.q = e.target.value; renderBoard(); });
+$('#ftipo').addEventListener('change', e => { filters.tipo = e.target.value; renderBoard(); });
+function syncAlertBtn(){ $('#bAlert').classList.toggle('on', filters.alert); $('#bAlert').setAttribute('aria-pressed', filters.alert); }
+$('#bAlert').addEventListener('click', () => { filters.alert=!filters.alert; syncAlertBtn(); renderBoard(); });
+$('#bCompact').addEventListener('click', e => { compact=!compact; document.body.classList.toggle('compact',compact); e.currentTarget.classList.toggle('on',compact); e.currentTarget.setAttribute('aria-pressed',compact); });
+$('#bReset').addEventListener('click', () => { snapshot(); cards = initialCards(); sel=null; save(); renderBoard(); renderDrawers(); toast('Dados de 26/10 restaurados', true); });
+document.querySelectorAll('#sideSeg button').forEach(b => b.addEventListener('click', () => setMode(b.dataset.m)));
+
+/* ---------- início ---------- */
+function fitTop(){ document.documentElement.style.setProperty('--topH', $('#top').offsetHeight+'px'); }
+window.addEventListener('resize', fitTop);
+$('#ftipo').insertAdjacentHTML('beforeend', TIPOS.map(t=>'<option>'+t+'</option>').join(''));
+load(); fitTop(); setMode(mode); renderBoard();
+</script>
+</body>
+</html>
