@@ -301,6 +301,7 @@ function desenharEstrutura() {
   $sync = h("span", { class: "sync" }, "📥 Planilha…");
   $btnSync = BOTAO_ATUALIZAR_PLANILHA && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, "🔄 Atualizar da planilha") : null;
   desenharSync();
+  const hist = h("button", { onclick: abrirHistorico, title: "O que foi alterado hoje, de quê para quê e por quem" }, "🕘 Histórico");
   const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
@@ -318,7 +319,7 @@ function desenharEstrutura() {
       $sync, $btnSync,
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, legendas, $btnDesfazer, mapa, painel, reset, ...botoes),
+      compacto, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
@@ -728,6 +729,35 @@ function contar(lista, chave) {
   const m = new Map();
   lista.forEach((r) => { const k = chave(r); if (k) m.set(k, (m.get(k) || 0) + 1); });
   return [...m].map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v);
+}
+
+async function abrirHistorico() {
+  const corpo = h("div", {}, h("p", { class: "hint" }, "Carregando…"));
+  const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) m.remove(); } },
+    h("div", { class: "box" }, h("div", { class: "row" }, h("h2", { style: "flex:1;margin:0" }, "Histórico de alterações"), h("button", { onclick: () => m.remove() }, "Fechar")), corpo));
+  document.body.append(m);
+  const { data, error } = await sb.rpc("prog_historico", { p_dia: S.dia, p_limite: 500 });
+  if (error) { corpo.replaceChildren(h("p", { class: "err" }, traduzErro(error))); return; }
+  const todos = data || [];
+  let origem = "", busca = "";
+  const lista = h("div", { class: "hist" });
+  const hm = (ts) => new Date(ts).toLocaleString("pt-BR", { day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+  function desenhar() {
+    const q = busca.trim().toLowerCase();
+    const vis = todos.filter((x) => (!origem || x.origem === origem) && (!q || [x.placa, x.campo, x.antes, x.depois, x.quem].join(" ").toLowerCase().includes(q)));
+    if (!vis.length) { lista.replaceChildren(h("p", { class: "hint" }, "Nenhuma alteração encontrada hoje.")); return; }
+    lista.replaceChildren(h("table", { class: "hist-t" },
+      h("thead", {}, h("tr", {}, ["Quando", "Veículo", "O que mudou", "De", "Para", "Quem"].map((t) => h("th", {}, t)))),
+      h("tbody", {}, vis.map((x) => h("tr", {},
+        h("td", {}, hm(x.em)), h("td", {}, h("b", {}, x.placa || "—")), h("td", {}, x.campo),
+        h("td", { class: "de" }, x.antes || "—"), h("td", { class: "para" }, x.depois || "—"),
+        h("td", {}, h("span", { class: "tag " + (x.origem === "Planilha" ? "pl" : "sis") }, x.origem === "Planilha" ? "📥 Planilha" : "👤 " + x.quem)))))));
+  }
+  const sel = h("select", { style: "width:auto", onchange: (e) => { origem = e.target.value; desenhar(); } },
+    [["", "Todas as origens"], ["Planilha", "Vindas da planilha"], ["Sistema", "Feitas no sistema"]].map(([v, t]) => h("option", { value: v }, t)));
+  const bus = h("input", { type: "search", placeholder: "Buscar placa, campo, valor…", style: "max-width:260px", oninput: (e) => { busca = e.target.value; desenhar(); } });
+  corpo.replaceChildren(h("div", { class: "row", style: "margin:10px 0;gap:8px;flex-wrap:wrap" }, sel, bus, h("span", { class: "hint" }, "Dia " + dataBR(S.dia) + " · mais recentes primeiro")), lista);
+  desenhar();
 }
 
 async function abrirPainel() {
