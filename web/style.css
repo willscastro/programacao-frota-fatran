@@ -91,3 +91,7 @@ button.pill{cursor:pointer}
 .hist-t .tag{font-size:11px;border-radius:999px;padding:2px 8px;white-space:nowrap}
 .hist-t .tag.pl{background:#e0f2fe;color:#075985}
 .hist-t .tag.sis{background:#f1f5f9;color:#334155}
+
+header.top .diaNav{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+header.top .diaNav input[type=date]{width:auto;padding:3px 6px}
+header.top .passado{font-size:12px;color:#92400e;background:#fffbeb;border:1px solid #f59e0b;border-radius:999px;padding:3px 10px}

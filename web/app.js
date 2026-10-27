@@ -101,7 +101,9 @@ async function iniciar() {
 
   await sb.rpc("prog_garantir_dia"); // cria o dia de hoje se ainda não existir
   const hoje = await sb.rpc("prog_hoje");
-  S.dia = hoje.data;
+  S.dia = hoje.data; S.hoje = hoje.data;
+  const dl = await sb.from("prog_dias").select("dia").order("dia", { ascending: false }).limit(800);
+  S.diasLista = (dl.data || []).map((x) => x.dia);
   desenharEstrutura();
   await carregar();
   assinarTempoReal();
@@ -133,6 +135,7 @@ async function carregarSync() {
 }
 function desenharSync() {
   if (!$sync) return;
+  if (S.dia !== S.hoje) { $sync.className = ""; $sync.textContent = ""; return; }
   const s = S.sync;
   if (!s || !s.ultima_em) { $sync.className = "sync"; $sync.textContent = "📥 Planilha: aguardando a 1ª leitura"; return; }
   const idade = Date.now() - new Date(s.ultima_em).getTime();
@@ -288,6 +291,19 @@ function setLado(v) {
   for (const [k, b] of Object.entries($lados)) b.classList.toggle("on", k === v);
   if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); if (r) abrirGaveta(r); }
 }
+// ---------- navegar entre os dias (histórico guardado) ----------
+async function irParaDia(d) {
+  if (!d || d === S.dia) return;
+  S.dia = d; S.desfazer = []; fecharGaveta();
+  S.aguardando = null;
+  desenharEstrutura();
+  await carregar();
+}
+function vizinho(delta) {
+  const l = (S.diasLista || []).slice().sort(); const i = l.indexOf(S.dia);
+  return i < 0 ? null : l[i + delta] || null;
+}
+
 function desenharEstrutura() {
   $busca = h("input", { type: "search", placeholder: "Buscar placa, motorista, destino…", style: "max-width:240px", oninput: desenharQuadro });
   const tipo = h("select", { style: "width:auto", onchange: (e) => { S.filtro.tipo = e.target.value; desenharQuadro(); } },
@@ -298,8 +314,8 @@ function desenharEstrutura() {
   const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
   $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
   const mapa = h("button", { onclick: abrirMapa }, "🗺️ Mapa");
-  $sync = h("span", { class: "sync" }, "📥 Planilha…");
-  $btnSync = BOTAO_ATUALIZAR_PLANILHA && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, "🔄 Atualizar da planilha") : null;
+  $sync = S.dia === S.hoje ? h("span", { class: "sync" }, "📥 Planilha…") : h("span", { class: "sync" }, "");
+  $btnSync = BOTAO_ATUALIZAR_PLANILHA && S.dia === S.hoje && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, "🔄 Atualizar da planilha") : null;
   desenharSync();
   const hist = h("button", { onclick: abrirHistorico, title: "O que foi alterado hoje, de quê para quê e por quem" }, "🕘 Histórico");
   const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
@@ -315,7 +331,13 @@ function desenharEstrutura() {
   $app.replaceChildren(
     h("header", { class: "top" },
       h("div", { style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
-      h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
+      h("div", { class: "diaNav" },
+        h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, "◀"),
+        h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
+        h("button", { title: "Próximo dia", disabled: !vizinho(1), onclick: () => irParaDia(vizinho(1)) }, "▶"),
+        h("input", { type: "date", value: S.dia, min: (S.diasLista || []).slice().sort()[0], max: S.hoje, title: "Ir para um dia", onchange: (e) => { const v = e.target.value; if ((S.diasLista || []).includes(v)) irParaDia(v); else if (v) toast("Não há registro desse dia."); } }),
+        S.dia !== S.hoje ? h("button", { class: "on", onclick: () => irParaDia(S.hoje) }, "Voltar para hoje") : null,
+        S.dia !== S.hoje ? h("span", { class: "passado" }, "📁 Dia anterior · consulta") : null),
       $sync, $btnSync,
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
