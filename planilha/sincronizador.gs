@@ -3,7 +3,7 @@
  * Projeto PRÓPRIO e separado (não mexe em nenhum outro script da empresa).
  *
  * SOMENTE LÊ a planilha (escopo spreadsheets.readonly: o script não tem permissão para alterá-la).
- * Envia a aba do dia (nome DDMMAAAA, ex.: 27102026) para o sistema.
+ * Envia a aba do dia (nome DD/MM/AAAA, ex.: 27/10/2026) para o sistema.
  */
 var ID_PLANILHA = "186LZeszdUUx2VgBK5zCi0aD9FbApxRk_h73wS07gOOE";
 var URL_SISTEMA = "https://rmlbnqnnanrkvoeqntim.supabase.co/functions/v1/receber-planilha";
@@ -19,7 +19,7 @@ function pad_(l) { var r = (l || []).slice(); while (r.length < 24) r.push(""); 
 
 function montar_() {
   var hoje = Utilities.formatDate(new Date(), FUSO, "yyyy-MM-dd");
-  var aba = Utilities.formatDate(new Date(), FUSO, "ddMMyyyy");
+  var aba = Utilities.formatDate(new Date(), FUSO, "dd/MM/yyyy");
   var faixa = "'" + aba + "'!A" + PRIMEIRA_LINHA + ":X";
   var v, t;
   try {
@@ -81,4 +81,16 @@ function desligarAutomatico() {
   ScriptApp.getProjectTriggers().forEach(function (g) {
     if (g.getHandlerFunction() === "sincronizarAutomatico") ScriptApp.deleteTrigger(g);
   });
+}
+
+// "Ponte": o botão "Atualizar da planilha" do sistema chama este aplicativo web (implantado como
+// "Executar como: eu" / "Acesso: qualquer pessoa"). O endereço é longo e imprevisível, só o sistema o conhece
+// (quem chama já foi validado lá) e há limite de uma leitura a cada 15 s. Só LÊ a planilha.
+function doPost(e) {
+  var saida = ContentService.createTextOutput().setMimeType(ContentService.MimeType.JSON);
+  var cache = CacheService.getScriptCache();
+  if (cache.get("ponte")) return saida.setContent(JSON.stringify({ ok: true, limitado: true }));
+  cache.put("ponte", "1", 15);
+  var res = enviar_();
+  return saida.setContent(JSON.stringify(res.ok ? Object.assign({ ok: true }, res.r) : { erro: res.msg }));
 }

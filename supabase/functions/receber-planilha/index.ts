@@ -155,5 +155,10 @@ Deno.serve(async (req) => {
     } else resumo.sem_mudanca++;
     await admin.from("prog_planilha_snap").upsert({ dia, placa: pl, dados: n, atualizado_em: new Date().toISOString() });
   }
+  const agora = new Date();
+  await admin.from("prog_sync_status").upsert({
+    id: 1, ultima_em: agora.toISOString(), proxima_em: new Date(agora.getTime() + 5 * 60000).toISOString(),
+    ultimo_resumo: { dia, ...resumo }, ultimo_erro: null,
+  });
   return json({ ok: true, dia, ...resumo });
 });

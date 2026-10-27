@@ -120,6 +120,44 @@ async function carregar() {
   S.tipos = Object.fromEntries((tp.data || []).map((t) => [t.codigo, t.cor]));
   desenharQuadro();
   if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); r ? abrirGaveta(r) : fecharGaveta(); }
+  carregarSync();
+}
+
+// ---------- sincronização com a planilha (última / próxima atualização) ----------
+let $sync, $btnSync;
+const BOTAO_ATUALIZAR_PLANILHA = false; // ligar quando a "ponte" (aplicativo web do Apps Script + função forcar-sync) estiver configurada
+const horaBR = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
+async function carregarSync() {
+  const { data } = await sb.from("prog_sync_status").select("*").eq("id", 1).maybeSingle();
+  if (data) { S.sync = data; desenharSync(); }
+}
+function desenharSync() {
+  if (!$sync) return;
+  const s = S.sync;
+  if (!s || !s.ultima_em) { $sync.className = "sync"; $sync.textContent = "📥 Planilha: aguardando a 1ª leitura"; return; }
+  const idade = Date.now() - new Date(s.ultima_em).getTime();
+  const falta = new Date(s.proxima_em).getTime() - Date.now();
+  const prox = falta > 60000 ? "em " + Math.ceil(falta / 60000) + " min" : "em instantes";
+  const parado = idade > 12 * 60000;
+  const r = s.ultimo_resumo || {};
+  $sync.className = "sync" + (parado ? " atraso" : "");
+  $sync.textContent = parado
+    ? "⚠ Planilha sem atualizar desde " + horaBR(s.ultima_em) + " (" + Math.round(idade / 60000) + " min)"
+    : "📥 Planilha · última " + horaBR(s.ultima_em) + " · próxima " + prox;
+  $sync.title = "Última leitura às " + horaBR(s.ultima_em) + (r.lidas != null ? "\nVeículos lidos: " + r.lidas + " · alterados: " + (r.atualizadas || 0) + " · novos: " + (r.criadas || 0) : "") +
+    "\nA planilha é lida automaticamente a cada 5 minutos.";
+}
+async function forcarSync() {
+  if ($btnSync.disabled) return;
+  $btnSync.disabled = true; const antes = $btnSync.textContent; $btnSync.textContent = "⏳ Lendo a planilha…";
+  try {
+    const { data, error } = await sb.functions.invoke("forcar-sync");
+    if (error) throw error;
+    if (!data || data.erro || !data.ok) throw new Error((data && data.erro) || "Não foi possível atualizar");
+    toast(data.atualizadas || data.criadas ? "Planilha lida: " + (data.atualizadas || 0) + " alterado(s), " + (data.criadas || 0) + " novo(s)" : "Planilha lida: nada mudou desde a última leitura");
+    await carregar();
+  } catch (e) { toast(traduzErro(e)); }
+  $btnSync.disabled = false; $btnSync.textContent = antes;
 }
 
 function assinarTempoReal() {
@@ -129,7 +167,9 @@ function assinarTempoReal() {
   S.canal = sb.channel("prog-quadro")
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_programacao" }, recarregar)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_status" }, recarregar)
+    .on("postgres_changes", { event: "*", schema: "public", table: "prog_sync_status" }, carregarSync)
     .subscribe();
+  if (!S.relogioSync) S.relogioSync = setInterval(desenharSync, 20000);
   // Rede de segurança: se o tempo real falhar, atualiza ao voltar para a aba e a cada 10 s
   if (!S.poll) {
     const seguro = () => { if (document.visibilityState === "visible" && !document.querySelector(".modal") && !document.querySelector(".drawer input:focus, .drawer textarea:focus")) carregar(); };
@@ -251,6 +291,9 @@ function desenharEstrutura() {
   const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
   $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
   const mapa = h("button", { onclick: abrirMapa }, "🗺️ Mapa");
+  $sync = h("span", { class: "sync" }, "📥 Planilha…");
+  $btnSync = BOTAO_ATUALIZAR_PLANILHA && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Lê a planilha agora e atualiza o quadro" }, "🔄 Atualizar da planilha") : null;
+  desenharSync();
   const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
@@ -265,6 +308,7 @@ function desenharEstrutura() {
     h("header", { class: "top" },
       h("div", { style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
       h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
+      $sync, $btnSync,
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
       compacto, legendas, $btnDesfazer, mapa, painel, reset, ...botoes),
