@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -242,6 +242,8 @@ function desenharEstrutura() {
   const compacto = h("button", { onclick: (e) => { document.body.classList.toggle("compact"); e.currentTarget.classList.toggle("on"); } }, "Compacto");
   const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
   const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
+  $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
+  const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
@@ -257,7 +259,7 @@ function desenharEstrutura() {
       h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, legendas, reset, ...botoes),
+      compacto, legendas, $btnDesfazer, painel, reset, ...botoes),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
@@ -266,7 +268,14 @@ function cartao(r) {
   const al = alertas(r);
   return h("div", { class: "card" + (can("status.mover") ? " drag" : ""), draggable: can("status.mover") ? "true" : false, style: "border-left-color:" + (S.tipos[r.tipo] || "#94a3b8"),
     onclick: () => abrirGaveta(r),
-    ondragstart: (e) => { e.dataTransfer.setData("text/plain", String(r.id)); e.dataTransfer.effectAllowed = "move"; } },
+    ondragstart: (e) => { e.dataTransfer.setData("text/plain", String(r.id)); e.dataTransfer.effectAllowed = "move"; },
+    ondragover: (e) => { if (!e.dataTransfer.types.includes("application/x-coluna") && can("programacao.editar")) { e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.add("alvo"); } },
+    ondragleave: (e) => e.currentTarget.classList.remove("alvo"),
+    ondrop: (e) => {
+      if (e.dataTransfer.types.includes("application/x-coluna") || !can("programacao.editar")) return;
+      e.preventDefault(); e.stopPropagation(); e.currentTarget.classList.remove("alvo");
+      soltarNoCartao(Number(e.dataTransfer.getData("text/plain")), r.id);
+    } },
     h("div", { class: "pl" }, r.placa_cavalo, r.placa_implemento ? " / " + r.placa_implemento : "",
       al.length ? h("span", { class: "al " + pior(al), title: al.map((x) => x.t).join("\n") }, "⚠ " + al.length) : null),
     h("div", { class: "sub" }, [r.tipo, r.motorista].filter(Boolean).join(" · ")),
@@ -304,6 +313,32 @@ function desenharQuadro() {
   desenharResumo();
 }
 
+// ---------- desfazer ----------
+let $btnDesfazer;
+function guardar(rotulo, fn) {
+  S.desfazer.push({ rotulo, fn });
+  if (S.desfazer.length > 20) S.desfazer.shift();
+  atualizarDesfazer();
+}
+function atualizarDesfazer() {
+  if (!$btnDesfazer) return;
+  const ult = S.desfazer[S.desfazer.length - 1];
+  $btnDesfazer.disabled = !ult;
+  $btnDesfazer.title = ult ? "Desfazer: " + ult.rotulo + " (Ctrl+Z)" : "Nada para desfazer";
+}
+async function desfazerUltimo() {
+  const ult = S.desfazer.pop();
+  atualizarDesfazer();
+  if (!ult) return toast("Nada para desfazer.");
+  try { await ult.fn(); toast("Desfeito: " + ult.rotulo); } catch (e) { toast(traduzErro(e)); }
+  carregar();
+}
+document.addEventListener("keydown", (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === "z" && !/INPUT|TEXTAREA|SELECT/.test((document.activeElement || {}).tagName || "")) {
+    e.preventDefault(); desfazerUltimo();
+  }
+});
+
 // Grava a nova ordem das colunas (lista de códigos na ordem desejada).
 // A ordem é única no banco, então primeiro vai para valores negativos e depois para os finais.
 async function gravarOrdem(codigos, anterior) {
@@ -339,7 +374,38 @@ async function mover(id, novo) {
     r.status = antigo; desenharQuadro();
     toast(error ? traduzErro(error) : "Outra pessoa alterou este cartão. Atualizando…");
     carregar();
+    return;
   }
+  guardar("mover " + r.placa_cavalo + " de " + antigo + " para " + novo, async () => {
+    const { error: e } = await sb.from("prog_programacao").update({ status: antigo }).eq("id", id);
+    if (e) throw e;
+  });
+}
+
+// Reordena cartões dentro da coluna (ou move para outra coluna na posição do cartão alvo)
+async function soltarNoCartao(idArr, idAlvo) {
+  const arr = S.rows.find((x) => x.id === idArr), alvo = S.rows.find((x) => x.id === idAlvo);
+  if (!arr || !alvo || arr.id === alvo.id) return;
+  const mudaColuna = arr.status !== alvo.status;
+  if (mudaColuna && !can("status.mover")) return toast("Seu perfil não pode mudar o status.");
+  if (!can("programacao.editar")) return toast("Seu perfil não pode reordenar os cartões.");
+  const ord = (a, b) => (a.ordem ?? 9999) - (b.ordem ?? 9999) || a.placa_cavalo.localeCompare(b.placa_cavalo);
+  const col = S.rows.filter((x) => x.status === alvo.status && x.id !== arr.id).sort(ord);
+  col.splice(col.findIndex((x) => x.id === alvo.id), 0, arr);
+  const antes = new Map(); const mudancas = [];
+  col.forEach((x, i) => {
+    const novo = { ordem: i + 1, status: alvo.status };
+    if (x.ordem !== novo.ordem || x.status !== novo.status) { antes.set(x.id, { ordem: x.ordem, status: x.status }); mudancas.push([x, novo]); }
+  });
+  mudancas.forEach(([x, novo]) => Object.assign(x, novo)); desenharQuadro(); // mostra já
+  for (const [x, novo] of mudancas) {
+    const { error } = await sb.from("prog_programacao").update(novo).eq("id", x.id);
+    if (error) { toast(traduzErro(error)); return carregar(); }
+  }
+  guardar("reordenar " + arr.placa_cavalo, async () => {
+    for (const [id, v] of antes) { const { error } = await sb.from("prog_programacao").update(v).eq("id", id); if (error) throw error; }
+  });
+  carregar();
 }
 
 // ---------- gaveta de detalhes (edição completa da viagem) ----------
@@ -395,8 +461,22 @@ function abrirGaveta(r) {
     const { data, error } = await sb.from("prog_programacao").update(alt).eq("id", r.id).eq("versao", r.versao).select("id");
     if (error) return toast(traduzErro(error));
     toast(data.length ? "Salvo." : "Outra pessoa alterou este cartão. Atualizando…");
+    if (data.length) {
+      const antigo = Object.fromEntries(Object.keys(alt).map((k) => [k, r[k] ?? null]));
+      guardar("editar " + r.placa_cavalo, async () => { const { error: e } = await sb.from("prog_programacao").update(antigo).eq("id", r.id); if (e) throw e; });
+    }
     carregar();
   } }, "Salvar alterações");
+  const remover = can("programacao.excluir") ? h("button", { class: "danger", onclick: async () => {
+    if (!confirm("Remover " + r.placa_cavalo + " do quadro de hoje?\n(O conjunto continua cadastrado e volta nos próximos dias.)")) return;
+    const { error } = await sb.from("prog_programacao").delete().eq("id", r.id);
+    if (error) return toast(traduzErro(error));
+    const copia = { dia: r.dia, conjunto_id: r.conjunto_id, motorista_id: r.motorista_id, placa_implemento: r.placa_implemento, tipo: r.tipo, ordem: r.ordem, status: r.status,
+      embarcador: r.embarcador, destino: r.destino, data_programacao: r.data_programacao, cheg_carga: r.cheg_carga, carregou_em: r.carregou_em, prog_entrega: r.prog_entrega,
+      cheg_descarga: r.cheg_descarga, fim_descarga: r.fim_descarga, localizacao: r.localizacao, posicao_em: r.posicao_em, obs: r.obs, proxima_carga: r.proxima_carga, proxima_regiao: r.proxima_regiao };
+    guardar("remover " + r.placa_cavalo, async () => { const { error: e } = await sb.from("prog_programacao").insert(copia); if (e) throw e; });
+    fecharGaveta(); toast("Removido do quadro de hoje. Use Desfazer para voltar."); carregar();
+  } }, "Remover do quadro") : null;
   const mover_ = can("status.mover") ? [h("label", {}, "Status"),
     h("select", { onchange: (e) => mover(r.id, e.target.value) },
       S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, s.codigo)))] : null;
@@ -408,7 +488,7 @@ function abrirGaveta(r) {
     alertas(r).length ? h("ul", { class: "alertas" }, alertas(r).map((x) => h("li", { class: x.s }, x.t))) : null);
   const g = document.getElementById("gavetas");
   const corpo = (lado, lista, extra) => h("aside", { class: "drawer " + lado }, topo(lado), lista.map((x) => x.bloco), extra);
-  const rodape = h("div", { class: "row", style: "margin-top:14px" }, salvar);
+  const rodape = h("div", { class: "row", style: "margin-top:14px" }, salvar, remover);
   if (S.lado === "both") g.replaceChildren(corpo("left", els.slice(0, 8), mover_), corpo("right", els.slice(8), rodape));
   else g.replaceChildren(corpo(S.lado, els, [mover_, rodape]));
 }
@@ -555,3 +635,93 @@ async function modalUsuarios() {
 
 // ---------- start ----------
 sb.auth.getSession().then(({ data }) => (data.session ? iniciar() : telaLogin()));
+
+
+// ---------- painel de indicadores ----------
+const minEntre = (a, b) => {
+  if (!a || !b) return null;
+  const m = Math.round((new Date(b) - new Date(a)) / 60000);
+  return m >= 0 && m < 7 * 24 * 60 ? m : null; // ignora datas incoerentes (> 7 dias)
+};
+const media = (v) => (v.length ? Math.round(v.reduce((x, y) => x + y, 0) / v.length) : null);
+
+function barras(titulo, itens, fmt = (v) => v, nota) {
+  const max = Math.max(1, ...itens.map((i) => i.v));
+  return h("section", { class: "pn-card" }, h("h3", {}, titulo),
+    itens.length ? h("div", { class: "pn-bars" }, itens.map((i) =>
+      h("div", { class: "pn-row", title: i.n + ": " + fmt(i.v) + (i.extra ? " · " + i.extra : "") },
+        h("span", { class: "pn-lab" }, i.n),
+        h("span", { class: "pn-trk" }, h("span", { class: "pn-bar", style: "width:" + Math.max(2, (i.v / max) * 100) + "%" })),
+        h("b", { class: "pn-val" }, fmt(i.v))))) : h("p", { class: "hint" }, "Sem dados no período."),
+    nota ? h("p", { class: "hint" }, nota) : null);
+}
+function contar(lista, chave) {
+  const m = new Map();
+  lista.forEach((r) => { const k = chave(r); if (k) m.set(k, (m.get(k) || 0) + 1); });
+  return [...m].map(([n, v]) => ({ n, v })).sort((a, b) => b.v - a.v);
+}
+
+async function abrirPainel() {
+  const corpo = h("div", { class: "pn" }, h("p", { class: "hint" }, "Carregando…"));
+  const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) m.remove(); } },
+    h("div", { class: "box" }, h("div", { class: "row" }, h("h2", { style: "flex:1;margin:0" }, "Painel de indicadores"), h("button", { onclick: () => m.remove() }, "Fechar")), corpo));
+  document.body.append(m);
+  let dias = 7;
+  const sel = h("select", { style: "width:auto", onchange: (e) => { dias = Number(e.target.value); desenhar(); } },
+    [[1, "Hoje"], [7, "Últimos 7 dias"], [30, "Últimos 30 dias"]].map(([v, t]) => h("option", { value: v, selected: v === 7 }, t)));
+  const ini = new Date(S.dia + "T12:00:00"); ini.setDate(ini.getDate() - 29);
+  const { data, error } = await sb.from("prog_programacao_v").select("*").gte("dia", ini.toISOString().slice(0, 10)).lte("dia", S.dia).limit(5000);
+  if (error) { corpo.replaceChildren(h("p", { class: "err" }, traduzErro(error))); return; }
+  const todos = data || [];
+
+  function desenhar() {
+    const hojeR = S.rows;
+    const lim = new Date(S.dia + "T12:00:00"); lim.setDate(lim.getDate() - (dias - 1));
+    const periodo = todos.filter((r) => r.dia >= lim.toISOString().slice(0, 10));
+    const n = (...cods) => hojeR.filter((r) => cods.includes(r.status)).length;
+    const total = hojeR.length;
+    const fora = n("EM MANUTENÇÃO", "AG. PROGRAMAÇÃO", "ENTREGUE");
+    const operando = total - n("EM MANUTENÇÃO");
+    const emViagem = n("EM TRÂNSITO", "PERNOITE", "DSR");
+    const ocup = operando ? Math.round(((total - fora) / operando) * 100) : 0;
+    const comAlerta = hojeR.filter((r) => alertas(r).length).length;
+    const kpi = (rot, val, sub) => h("div", { class: "pn-kpi" }, h("div", { class: "hint" }, rot), h("div", { class: "pn-n" }, String(val)), sub ? h("div", { class: "hint" }, sub) : null);
+
+    const esperasC = [], esperasD = [];
+    periodo.forEach((r) => {
+      const c = minEntre(r.cheg_carga, r.carregou_em), d = minEntre(r.cheg_descarga, r.fim_descarga);
+      if (c != null) esperasC.push({ r, v: c }); if (d != null) esperasD.push({ r, v: d });
+    });
+    const mediaPor = (lista, chave) => {
+      const g = new Map();
+      lista.forEach(({ r, v }) => { const k = chave(r); if (k) (g.get(k) || g.set(k, []).get(k)).push(v); });
+      return [...g].map(([k, v]) => ({ n: k, v: media(v), extra: v.length + " viagem(ns)" })).sort((a, b) => b.v - a.v).slice(0, 8);
+    };
+    const vivos = hojeR.map((r) => ({ r, v: esperaViva(r) })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 5);
+    const porStatus = S.status.filter((s) => s.ativo !== false).map((s) => ({ n: s.codigo, v: hojeR.filter((r) => r.status === s.codigo).length })).filter((x) => x.v > 0);
+
+    corpo.replaceChildren(
+      h("div", { class: "pn-kpis" },
+        kpi("Conjuntos no quadro", total), kpi("Em viagem", emViagem, "trânsito + pernoite + DSR"),
+        kpi("Ocupação da frota", ocup + "%", "ativos ÷ disponíveis (sem manutenção)"),
+        kpi("Em manutenção", n("EM MANUTENÇÃO")), kpi("Com alerta", comAlerta)),
+      h("div", { class: "pn-grid" },
+        barras("Frota hoje por status", porStatus),
+        h("section", { class: "pn-card" }, h("h3", {}, "Maiores esperas agora"),
+          vivos.length ? h("ul", { class: "pn-list" }, vivos.map(({ r, v }) =>
+            h("li", {}, h("span", {}, r.placa_cavalo + " · " + r.status.replace("AG. ", "")), h("span", { class: "badge " + semaforo(v) }, fmtMin(v))))) : h("p", { class: "hint" }, "Ninguém aguardando agora.")),
+        barras("Próximas cargas hoje por região", contar(hojeR.filter((r) => r.proxima_carga || r.proxima_regiao), (r) => r.proxima_regiao || "Sem região")),
+        barras("Frota hoje por tipo", contar(hojeR, (r) => r.tipo))),
+      h("div", { class: "row", style: "margin:16px 0 6px" }, h("h2", { style: "flex:1;margin:0;font-size:16px" }, "Período"), sel),
+      h("div", { class: "pn-kpis" },
+        kpi("Espera média no carregamento", esperasC.length ? fmtMin(media(esperasC.map((x) => x.v))) : "—", esperasC.length + " registro(s)"),
+        kpi("Espera média na descarga", esperasD.length ? fmtMin(media(esperasD.map((x) => x.v))) : "—", esperasD.length + " registro(s)"),
+        kpi("Cargas no período", periodo.filter((r) => r.embarcador).length, "linhas com embarcador")),
+      h("div", { class: "pn-grid" },
+        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.embarcador), fmtMin, "Só viagens com chegada e saída preenchidas."),
+        barras("Espera média na descarga por destino", mediaPor(esperasD, (r) => r.destino), fmtMin),
+        barras("Cargas por embarcador", contar(periodo, (r) => r.embarcador).slice(0, 8)),
+        barras("Cargas por motorista", contar(periodo, (r) => r.motorista).slice(0, 8))));
+  }
+  desenhar();
+}

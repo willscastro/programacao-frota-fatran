@@ -63,3 +63,17 @@ button.pill{cursor:pointer}
 .pill.piscar{animation:piscar 1s ease-in-out infinite;font-weight:700}
 @media (prefers-reduced-motion:reduce){.pill.piscar{animation:none;outline:2px solid #ef4444}}
 .col h2.arrastavel{cursor:grab}.col h2 .grip{color:var(--mut)}
+.card.alvo{box-shadow:0 -3px 0 0 var(--pri)}
+.painel .box{width:min(1000px,96vw);max-height:92vh;overflow:auto}
+.pn-kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:12px}
+.pn-kpi{border:1px solid var(--bd);border-radius:10px;padding:10px 12px;background:var(--bg)}
+.pn-n{font-size:28px;font-weight:700;line-height:1.1}
+.pn-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:12px;margin-top:12px}
+.pn-card{border:1px solid var(--bd);border-radius:10px;padding:12px}
+.pn-card h3{margin:0 0 8px;font-size:14px}
+.pn-row{display:flex;align-items:center;gap:8px;margin:5px 0}
+.pn-lab{flex:0 0 38%;font-size:12px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pn-trk{flex:1;height:10px;background:var(--bg);border-radius:0 5px 5px 0}
+.pn-bar{display:block;height:100%;background:var(--pri);border-radius:0 4px 4px 0}
+.pn-val{flex:0 0 52px;text-align:right;font-size:12px}
+.pn-list{list-style:none;margin:0;padding:0}.pn-list li{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--bd)}
