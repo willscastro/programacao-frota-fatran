@@ -9,6 +9,9 @@ Transformar a planilha manual de programação de frota da Fatran em uma soluç�
 | Arquivo | O que é |
 |---|---|
 | [`docs/CEREBRO.md`](docs/CEREBRO.md) | Documento mestre: como a planilha funciona, modelo de dados, regras, UX e roadmap |
+| [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md) | Sistema multiusuário: perfis e permissões, login, banco, hospedagem e geração automática do dia |
+| [`db/migrations/`](db/migrations) | Scripts SQL do banco (esquema, dados iniciais, segurança, dia automático). **Ainda não aplicados** |
+| [`supabase/functions/criar-usuario`](supabase/functions/criar-usuario/index.ts) | Função segura para o admin criar usuários |
 | [`design/prototipo-kanban.html`](design/prototipo-kanban.html) | Protótipo interativo (HTML/CSS/JS, sem dependências). Abra no navegador |
 | [`design/dados-exemplo-26-10-2026.json`](design/dados-exemplo-26-10-2026.json) | Dados reais da aba de 26/10/2026, usados no protótipo |
 
@@ -24,6 +27,10 @@ Transformar a planilha manual de programação de frota da Fatran em uma soluç�
 
 > Os dados ficam só no navegador (`localStorage`). O botão ↺ restaura os dados de 26/10.
 
+## Fase 1 — banco e login (em andamento)
+
+Os scripts do banco estão escritos e foram testados num PostgreSQL local, simulando o Supabase, com cada perfil. Faltam duas decisões para aplicar: onde fica o banco e a matriz final de permissões.
+
 ## Próximos passos
 
-Ver o roadmap e as decisões em aberto em [`docs/CEREBRO.md`](docs/CEREBRO.md), seções 8 e 9.
+Ver o roadmap e as decisões em aberto em [`docs/ARQUITETURA.md`](docs/ARQUITETURA.md), seções 8 e 9.

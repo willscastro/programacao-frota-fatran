@@ -3,6 +3,8 @@
 > Documento mestre do projeto. Tudo que for desenvolvido parte daqui.
 > Origem: planilha manual `Programação Frota - fatran.xlsx` (Google Sheets), analisada em 26/10/2026.
 > Objetivo: transformar a planilha manual em uma solução tecnológica visual (Kanban), rápida de operar e sem erros de digitação.
+>
+> **Atualização (26/10/2026):** usuários com perfis, login, banco de dados, hospedagem e geração automática do dia estão em [ARQUITETURA.md](ARQUITETURA.md). Onde este documento e a arquitetura divergirem, vale a arquitetura.
 
 ---
 
@@ -241,7 +243,12 @@ Ao **clicar em um cartão**, abre uma gaveta que **expande** sobre o quadro. O u
 programacao-frota-fatran/
 ├─ README.md
 ├─ docs/
-│  └─ CEREBRO.md                  ← este documento
-└─ design/
-   └─ prototipo-kanban.html       ← design interativo (abrir no navegador)
+│  ├─ CEREBRO.md                  ← este documento
+│  └─ ARQUITETURA.md              ← usuários, perfis, banco, hospedagem, dia automático
+├─ design/
+│  ├─ prototipo-kanban.html       ← design interativo (abrir no navegador)
+│  └─ dados-exemplo-26-10-2026.json
+├─ db/migrations/                 ← scripts SQL numerados (0001 a 0006)
+└─ supabase/functions/
+   └─ criar-usuario/index.ts      ← função segura para o admin criar usuários
 ```
