@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", alerta: false, status: "" } };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -180,19 +180,19 @@ function desenharResumo() {
     const maior = Math.max(0, ...grupo.map((r) => esperaViva(r) ?? 0));
     const cls = semaforo(maior); // y ≥2h · r ≥5h · v ≥7h
     const pisca = piscaSe(chave, grupo.length > 0 && maior >= S.pref.limiteMin);
-    return h("button", { class: "pill " + cls + (pisca ? " piscar" : "") + (S.filtro.status === st ? " on" : ""), title: maior ? "Maior espera: " + fmtMin(maior) : "Sem espera relevante",
-      onclick: () => { S.filtro.status = S.filtro.status === st ? "" : st; desenharQuadro(); } },
+    return h("button", { class: "pill " + cls + (pisca ? " piscar" : "") + (S.filtro.resumo === "status:" + st ? " on" : ""), title: maior ? "Maior espera: " + fmtMin(maior) : "Sem espera relevante",
+      onclick: () => alternarResumo("status:" + st) },
       h("b", {}, grupo.length), " " + txt, maior >= 120 ? h("span", { class: "hint" }, " · " + fmtMin(maior)) : null);
   };
-  const pill = (num, txt, cls, chave) => h("span", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") }, h("b", {}, num), " " + txt);
+  const pill = (num, txt, cls, chave, filtro) => h("button", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") + (S.filtro.resumo === filtro ? " on" : ""), title: "Clique para filtrar o quadro", onclick: () => alternarResumo(filtro) }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
-    pill(ativos, "conjuntos ativos"),
-    pill(n("EM TRÂNSITO"), "em trânsito", "", "transito"),
+    pill(ativos, "conjuntos ativos", "", null, "ativos"),
+    pill(n("EM TRÂNSITO"), "em trânsito", "", "transito", "status:EM TRÂNSITO"),
     pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
     pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
-    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : "", "manutencao"),
-    pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas"),
-    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.alerta ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
+    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : "", "manutencao", "status:EM MANUTENÇÃO"),
+    pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas", "esperas"),
+    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
     h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
 }
 function modalLegendas() {
@@ -210,10 +210,20 @@ function modalLegendas() {
     h("p", { class: "hint" }, "Marque as legendas do resumo que devem piscar para chamar atenção. Vale só para o seu usuário."),
     marcas, h("label", {}, "Aguardando carregamento/descarga pisca…"), lim));
 }
-function alternarAlerta() {
-  S.filtro.alerta = !S.filtro.alerta;
-  if ($btnAlerta) $btnAlerta.classList.toggle("on", S.filtro.alerta);
+function alternarResumo(k) {
+  S.filtro.resumo = S.filtro.resumo === k ? "" : k;
+  if ($btnAlerta) $btnAlerta.classList.toggle("on", S.filtro.resumo === "alertas");
   desenharQuadro();
+}
+function alternarAlerta() { alternarResumo("alertas"); }
+function porResumo(r) {
+  const k = S.filtro.resumo;
+  if (!k) return true;
+  if (k.startsWith("status:")) return r.status === k.slice(7);
+  if (k === "esperas") return (esperaViva(r) ?? 0) >= 300;
+  if (k === "alertas") return alertas(r).length > 0;
+  if (k === "ativos") return r.status !== "ENTREGUE";
+  return true;
 }
 
 // ---------- tela principal ----------
@@ -269,7 +279,7 @@ function desenharQuadro() {
   if (!$board) return;
   const q = ($busca.value || "").trim().toLowerCase();
   const ativos = S.status.filter((s) => s.ativo !== false);
-  const passa = (r) => (!S.filtro.status || r.status === S.filtro.status) && (!S.filtro.tipo || r.tipo === S.filtro.tipo) && (!S.filtro.alerta || alertas(r).length) &&
+  const passa = (r) => porResumo(r) && (!S.filtro.tipo || r.tipo === S.filtro.tipo) &&
     (!q || [r.placa_cavalo, r.placa_implemento, r.motorista, r.destino, r.embarcador, r.obs].some((v) => (v || "").toLowerCase().includes(q)));
   const cols = ativos.map((s) => {
     const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
