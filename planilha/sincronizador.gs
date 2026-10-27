@@ -10,21 +10,28 @@ var URL_SISTEMA = "https://rmlbnqnnanrkvoeqntim.supabase.co/functions/v1/receber
 var FUSO = "America/Sao_Paulo";
 var PRIMEIRA_LINHA = 3; // as linhas 1 e 2 são cabeçalho
 
-function d_(v) { return (v instanceof Date) ? Utilities.formatDate(v, FUSO, "yyyy-MM-dd") : ""; }
+// Serial do Sheets (dias desde 30/12/1899) -> "aaaa-mm-dd"
+function d_(v) {
+  if (typeof v !== "number" || v < 1) return "";
+  return new Date(Date.UTC(1899, 11, 30) + Math.floor(v) * 86400000).toISOString().slice(0, 10);
+}
+function pad_(l) { var r = (l || []).slice(); while (r.length < 24) r.push(""); return r; }
 
 function montar_() {
   var hoje = Utilities.formatDate(new Date(), FUSO, "yyyy-MM-dd");
   var aba = Utilities.formatDate(new Date(), FUSO, "ddMMyyyy");
-  var planilha = SpreadsheetApp.openById(ID_PLANILHA);
-  var ws = planilha.getSheetByName(aba);
-  if (!ws) return { hoje: hoje, aba: aba, linhas: null };
-  var n = ws.getLastRow() - PRIMEIRA_LINHA + 1;
-  if (n < 1) return { hoje: hoje, aba: aba, linhas: [] };
-  var v = ws.getRange(PRIMEIRA_LINHA, 1, n, 24).getValues();         // valores (datas como Date)
-  var t = ws.getRange(PRIMEIRA_LINHA, 1, n, 24).getDisplayValues();  // texto exibido (horas como "07:00")
+  var faixa = "'" + aba + "'!A" + PRIMEIRA_LINHA + ":X";
+  var v, t;
+  try {
+    // Leitura pela API do Sheets (só leitura): valores brutos e texto exibido
+    v = Sheets.Spreadsheets.Values.get(ID_PLANILHA, faixa, { valueRenderOption: "UNFORMATTED_VALUE", dateTimeRenderOption: "SERIAL_NUMBER" }).values || [];
+    t = Sheets.Spreadsheets.Values.get(ID_PLANILHA, faixa, { valueRenderOption: "FORMATTED_VALUE" }).values || [];
+  } catch (e) {
+    return { hoje: hoje, aba: aba, linhas: null };
+  }
   var linhas = [];
-  for (var i = 0; i < n; i++) {
-    var r = v[i], x = t[i];
+  for (var i = 0; i < v.length; i++) {
+    var r = pad_(v[i]), x = pad_(t[i]);
     if (!String(r[1]).trim()) continue;
     linhas.push({
       placa: r[1], impl: r[2], tipo: r[3], mot: r[4],
