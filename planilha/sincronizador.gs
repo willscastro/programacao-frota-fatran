@@ -1,27 +1,21 @@
 /**
  * Sincronizador Planilha -> Sistema de Programação de Frota (Fatran)
+ * Projeto PRÓPRIO e separado (não mexe em nenhum outro script da empresa).
  *
  * SOMENTE LÊ a planilha (escopo spreadsheets.readonly: o script não tem permissão para alterá-la).
  * Envia a aba do dia (nome DDMMAAAA, ex.: 27102026) para o sistema.
  */
+var ID_PLANILHA = "186LZeszdUUx2VgBK5zCi0aD9FbApxRk_h73wS07gOOE";
 var URL_SISTEMA = "https://rmlbnqnnanrkvoeqntim.supabase.co/functions/v1/receber-planilha";
 var FUSO = "America/Sao_Paulo";
 var PRIMEIRA_LINHA = 3; // as linhas 1 e 2 são cabeçalho
-
-function onOpen() {
-  SpreadsheetApp.getUi().createMenu("Sistema de Frota")
-    .addItem("Sincronizar agora", "sincronizarAgora")
-    .addItem("Ligar sincronização automática (5 min)", "ligarAutomatico")
-    .addItem("Desligar sincronização automática", "desligarAutomatico")
-    .addToUi();
-}
 
 function d_(v) { return (v instanceof Date) ? Utilities.formatDate(v, FUSO, "yyyy-MM-dd") : ""; }
 
 function montar_() {
   var hoje = Utilities.formatDate(new Date(), FUSO, "yyyy-MM-dd");
   var aba = Utilities.formatDate(new Date(), FUSO, "ddMMyyyy");
-  var planilha = SpreadsheetApp.getActive();
+  var planilha = SpreadsheetApp.openById(ID_PLANILHA);
   var ws = planilha.getSheetByName(aba);
   if (!ws) return { hoje: hoje, aba: aba, linhas: null };
   var n = ws.getLastRow() - PRIMEIRA_LINHA + 1;
@@ -60,24 +54,21 @@ function enviar_() {
   return { ok: true, r: corpo };
 }
 
+// Rode esta função manualmente para testar (botão Executar). O resultado aparece em "Registro de execução".
 function sincronizarAgora() {
   var res = enviar_();
-  var ui = SpreadsheetApp.getUi();
-  if (!res.ok) { ui.alert("Não sincronizou: " + res.msg); return; }
-  var r = res.r;
-  ui.alert("Sincronizado!\nAtualizados: " + r.atualizadas + "\nSem mudança: " + r.sem_mudanca + "\nNovos: " + r.criadas + "\nPrimeira leitura: " + r.primeira_leitura);
+  if (!res.ok) { Logger.log("NÃO SINCRONIZOU: " + res.msg); return; }
+  Logger.log("Sincronizado! " + JSON.stringify(res.r));
 }
 
-// Roda sozinho pelo gatilho (não abre janelas)
-function sincronizarAutomatico() {
-  var res = enviar_();
-  if (!res.ok) console.error(res.msg); else console.log(JSON.stringify(res.r));
-}
+// Roda sozinho pelo gatilho
+function sincronizarAutomatico() { sincronizarAgora(); }
 
+// Rode UMA vez para ligar a sincronização automática (a cada 5 minutos)
 function ligarAutomatico() {
   desligarAutomatico();
   ScriptApp.newTrigger("sincronizarAutomatico").timeBased().everyMinutes(5).create();
-  SpreadsheetApp.getUi().alert("Sincronização automática ligada (a cada 5 minutos).");
+  Logger.log("Sincronização automática ligada (a cada 5 minutos).");
 }
 function desligarAutomatico() {
   ScriptApp.getProjectTriggers().forEach(function (g) {
