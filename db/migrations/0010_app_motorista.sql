@@ -172,3 +172,17 @@ grant execute on function public.prog_app_perfil(), public.prog_app_dar_ciencia(
 
 -- Guarda o histórico de posições por 90 dias
 select cron.schedule('prog_limpar_posicoes', '30 3 * * *', $$delete from public.prog_posicoes where registrado_em < now() - interval '90 days'$$);
+
+-- (aplicado depois) libera o veículo para o motorista trocar
+create or replace function public.prog_app_liberar()
+returns void language plpgsql security definer set search_path = '' as $$
+declare v_mot bigint;
+begin
+  select a.motorista_id into v_mot from public.prog_app_perfil() a;
+  if v_mot is null then raise exception 'Sem acesso ao app' using errcode = '42501'; end if;
+  perform set_config('prog.app_motorista', '1', true);
+  update public.prog_programacao set motorista_id = null where dia = public.prog_hoje() and motorista_id = v_mot;
+end $$;
+revoke all on function public.prog_app_liberar() from public, anon;
+grant execute on function public.prog_app_liberar() to authenticated;
+-- (aplicado depois) prog_app_perfil passou a devolver também deve_trocar_senha

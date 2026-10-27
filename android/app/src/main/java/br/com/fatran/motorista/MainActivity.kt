@@ -183,7 +183,7 @@ class MainActivity : Activity() {
             acao("📍 Cheguei para descarregar", "chegou_descarga", laranja, "Confirma que chegou no local de descarga?")
             if (st != "AG. CARREGAMENTO") acao("🚛 Carregamento finalizado / saí", "saiu_carregado", verde, "Confirma que está saindo carregado?")
         }
-        botao("Trocar de veículo", cinza, false) { emFundo({ Api.rpc(this, "prog_app_escolher_conjunto", JSONObject().put("p_conjunto_id", s.getLong("conjunto_id"))); ui.post { situacaoTrocar(nome) } }) }
+        botao("Trocar de veículo", cinza, false) { emFundo({ Api.rpc(this, "prog_app_liberar"); ui.post { situacaoTrocar(nome) } }) }
         botao("Sair", cinza, false) { TrackingService.parar(this); Api.sair(this); telaLogin() }
         val r = Runnable { situacao(nome) }
         atualizador = r; ui.postDelayed(r, 60000)
