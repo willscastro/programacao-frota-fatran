@@ -125,11 +125,11 @@ async function carregar() {
 
 // ---------- sincronização com a planilha (última / próxima atualização) ----------
 let $sync, $btnSync;
-const BOTAO_ATUALIZAR_PLANILHA = false; // ligar quando a "ponte" (aplicativo web do Apps Script + função forcar-sync) estiver configurada
+const BOTAO_ATUALIZAR_PLANILHA = true;
 const horaBR = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 async function carregarSync() {
   const { data } = await sb.from("prog_sync_status").select("*").eq("id", 1).maybeSingle();
-  if (data) { S.sync = data; desenharSync(); }
+  if (data) { S.sync = data; desenharSync(); fimAguardando(); }
 }
 function desenharSync() {
   if (!$sync) return;
@@ -148,16 +148,23 @@ function desenharSync() {
     "\nA planilha é lida automaticamente a cada 5 minutos.";
 }
 async function forcarSync() {
-  if ($btnSync.disabled) return;
-  $btnSync.disabled = true; const antes = $btnSync.textContent; $btnSync.textContent = "⏳ Lendo a planilha…";
-  try {
-    const { data, error } = await sb.functions.invoke("forcar-sync");
-    if (error) throw error;
-    if (!data || data.erro || !data.ok) throw new Error((data && data.erro) || "Não foi possível atualizar");
-    toast(data.atualizadas || data.criadas ? "Planilha lida: " + (data.atualizadas || 0) + " alterado(s), " + (data.criadas || 0) + " novo(s)" : "Planilha lida: nada mudou desde a última leitura");
-    await carregar();
-  } catch (e) { toast(traduzErro(e)); }
-  $btnSync.disabled = false; $btnSync.textContent = antes;
+  if (S.aguardando) return;
+  $btnSync.disabled = true; $btnSync.textContent = "⏳ Pedido enviado…";
+  const { data, error } = await sb.rpc("prog_pedir_sync");
+  if (error) { toast(traduzErro(error)); $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; return; }
+  S.aguardando = new Date(data).getTime() - 2000;
+  toast("Pedido enviado. A planilha será lida em até 1 minuto.");
+  clearTimeout(S.tAguardando);
+  S.tAguardando = setTimeout(() => { if (S.aguardando) { S.aguardando = null; $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; toast("Ainda não leu a planilha. Confira se o script está ligado."); } }, 150000);
+}
+function fimAguardando() {
+  const s = S.sync;
+  if (!S.aguardando || !s || !s.ultima_em || new Date(s.ultima_em).getTime() < S.aguardando) return;
+  S.aguardando = null; clearTimeout(S.tAguardando);
+  if ($btnSync) { $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; }
+  const r = s.ultimo_resumo || {};
+  toast(r.atualizadas || r.criadas ? "Planilha lida: " + (r.atualizadas || 0) + " alterado(s), " + (r.criadas || 0) + " novo(s)" : "Planilha lida: nada mudou desde a última leitura");
+  carregar();
 }
 
 function assinarTempoReal() {
@@ -292,7 +299,7 @@ function desenharEstrutura() {
   $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
   const mapa = h("button", { onclick: abrirMapa }, "🗺️ Mapa");
   $sync = h("span", { class: "sync" }, "📥 Planilha…");
-  $btnSync = BOTAO_ATUALIZAR_PLANILHA && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Lê a planilha agora e atualiza o quadro" }, "🔄 Atualizar da planilha") : null;
+  $btnSync = BOTAO_ATUALIZAR_PLANILHA && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, "🔄 Atualizar da planilha") : null;
   desenharSync();
   const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
