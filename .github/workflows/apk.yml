@@ -1,6 +1,9 @@
 name: Gerar APK do motorista
+permissions:
+  contents: write
 on:
   push:
+    branches: [main]
     paths: ["android/**", ".github/workflows/apk.yml"]
   workflow_dispatch:
 jobs:
@@ -23,3 +26,8 @@ jobs:
         with:
           name: fatran-motorista-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+      - name: Publicar APK na branch apk
+        run: |
+          mkdir /tmp/pub && cp android/app/build/outputs/apk/debug/app-debug.apk /tmp/pub/fatran-motorista.apk
+          cd /tmp/pub && git init -q -b apk && git config user.name actions && git config user.email actions@github.com
+          git add . && git commit -q -m "APK $GITHUB_SHA" && git push -f "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}" apk
