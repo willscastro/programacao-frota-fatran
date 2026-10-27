@@ -51,3 +51,8 @@ header.top select,header.top input{width:auto}
 .al{float:right;font-size:11px;font-weight:700;padding:1px 7px;border-radius:999px}
 .al.warn{background:#fde9b8;color:#7a4b00}.al.crit{background:#fad0d0;color:#8a1717}
 .compact .card .dest{display:none}
+.pill.y{background:#fde68a;border-color:#d4a72c;color:#78350f}
+.pill.r{background:#fecaca;border-color:#d14343;color:#7f1d1d}
+.pill.v{background:#7f1d1d;border-color:#7f1d1d;color:#fff}
+.pill.on{box-shadow:0 0 0 2px var(--pri)}
+button.pill{cursor:pointer}

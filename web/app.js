@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, filtro: { tipo: "", alerta: false } };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, filtro: { tipo: "", alerta: false, status: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -156,11 +156,20 @@ function desenharResumo() {
   const n = (st) => S.rows.filter((r) => r.status === st).length;
   const esp = S.rows.filter((r) => (esperaViva(r) ?? 0) >= 300).length;
   const com = S.rows.filter((r) => alertas(r).length).length;
+  const pillEspera = (st, txt) => {
+    const grupo = S.rows.filter((r) => r.status === st);
+    const maior = Math.max(0, ...grupo.map((r) => esperaViva(r) ?? 0));
+    const cls = semaforo(maior); // y ≥2h · r ≥5h · v ≥7h
+    return h("button", { class: "pill " + cls + (S.filtro.status === st ? " on" : ""), title: maior ? "Maior espera: " + fmtMin(maior) : "Sem espera relevante",
+      onclick: () => { S.filtro.status = S.filtro.status === st ? "" : st; desenharQuadro(); } },
+      h("b", {}, grupo.length), " " + txt, maior >= 120 ? h("span", { class: "hint" }, " · " + fmtMin(maior)) : null);
+  };
   const pill = (num, txt, cls) => h("span", { class: "pill " + (cls || "") }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
     pill(ativos, "conjuntos ativos"),
     pill(n("EM TRÂNSITO"), "em trânsito"),
-    pill(n("AG. CARREGAMENTO") + n("AG. DESCARGA"), "aguardando carga/descarga"),
+    pillEspera("AG. CARREGAMENTO", "aguardando carregamento"),
+    pillEspera("AG. DESCARGA", "aguardando descarga"),
     pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : ""),
     pill(esp, "esperas ≥ 5h", esp ? "crit" : ""),
     h("button", { class: "pill " + (com ? "warn" : "") + (S.filtro.alerta ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
@@ -223,7 +232,7 @@ function desenharQuadro() {
   if (!$board) return;
   const q = ($busca.value || "").trim().toLowerCase();
   const ativos = S.status.filter((s) => s.ativo !== false);
-  const passa = (r) => (!S.filtro.tipo || r.tipo === S.filtro.tipo) && (!S.filtro.alerta || alertas(r).length) &&
+  const passa = (r) => (!S.filtro.status || r.status === S.filtro.status) && (!S.filtro.tipo || r.tipo === S.filtro.tipo) && (!S.filtro.alerta || alertas(r).length) &&
     (!q || [r.placa_cavalo, r.placa_implemento, r.motorista, r.destino, r.embarcador, r.obs].some((v) => (v || "").toLowerCase().includes(q)));
   const cols = ativos.map((s) => {
     const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
