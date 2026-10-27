@@ -45,6 +45,7 @@ class MainActivity : Activity() {
     private var nomeAtual: String? = null
     override fun onResume() {
         super.onResume()
+        Atualizador.conferir(this)
         if (voltou && Api.logado(this) && nomeAtual != null) situacao(nomeAtual!!)
         voltou = true
     }
