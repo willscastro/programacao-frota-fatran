@@ -59,3 +59,6 @@ button.pill{cursor:pointer}
 .alertas{margin:8px 0;padding:8px 10px 8px 24px;border-radius:8px;background:#fff6db;color:#6b4400;font-size:12.5px}
 .alertas li.crit{color:#7a1414;font-weight:600}
 @media (prefers-color-scheme:dark){.alertas{background:#3b3216;color:#f5d98a}.alertas li.crit{color:#fca5a5}}
+@keyframes piscar{0%,100%{box-shadow:0 0 0 0 #ef444400;transform:scale(1)}50%{box-shadow:0 0 0 5px #ef4444aa;transform:scale(1.06)}}
+.pill.piscar{animation:piscar 1s ease-in-out infinite;font-weight:700}
+@media (prefers-reduced-motion:reduce){.pill.piscar{animation:none;outline:2px solid #ef4444}}

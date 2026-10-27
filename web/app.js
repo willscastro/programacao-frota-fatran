@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], filtro: { tipo: "", alerta: false, status: "" } };
+const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", alerta: false, status: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -92,6 +92,8 @@ async function iniciar() {
     return telaLogin("Seu acesso não está liberado. Fale com o administrador.");
   }
   S.perfil = p.data;
+  const salvo = (user.user_metadata && user.user_metadata.pref_piscar) || {};
+  S.pref = { piscar: { ...S.pref.piscar, ...(salvo.piscar || {}) }, limiteMin: salvo.limiteMin ?? S.pref.limiteMin };
   if (S.perfil.deve_trocar_senha) { await telaTrocaSenha(); S.perfil.deve_trocar_senha = false; }
   const m = await sb.from("prog_papel_permissoes").select("permissao").eq("papel", S.perfil.papel);
   S.perms = new Set((m.data || []).map((x) => x.permissao));
@@ -156,30 +158,57 @@ function alertas(r) {
 }
 const pior = (al) => (al.some((x) => x.s === "crit") ? "crit" : al.length ? "warn" : "");
 
+// Legendas que podem piscar (cada pessoa escolhe as suas; fica salva no usuário)
+const LEGENDAS = [
+  ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
+  ["manutencao", "Em manutenção"], ["esperas", "Esperas ≥ 5h"], ["alertas", "Com alerta"],
+];
+const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 };
+function piscaSe(chave, ativo) { return !!(S.pref.piscar[chave] && ativo); }
+async function salvarPref() {
+  const { error } = await sb.auth.updateUser({ data: { pref_piscar: S.pref } });
+  if (error) toast(traduzErro(error));
+}
 function desenharResumo() {
   if (!$resumo) return;
   const ativos = S.rows.filter((r) => r.status !== "ENTREGUE").length;
   const n = (st) => S.rows.filter((r) => r.status === st).length;
   const esp = S.rows.filter((r) => (esperaViva(r) ?? 0) >= 300).length;
   const com = S.rows.filter((r) => alertas(r).length).length;
-  const pillEspera = (st, txt) => {
+  const pillEspera = (st, txt, chave) => {
     const grupo = S.rows.filter((r) => r.status === st);
     const maior = Math.max(0, ...grupo.map((r) => esperaViva(r) ?? 0));
     const cls = semaforo(maior); // y ≥2h · r ≥5h · v ≥7h
-    return h("button", { class: "pill " + cls + (S.filtro.status === st ? " on" : ""), title: maior ? "Maior espera: " + fmtMin(maior) : "Sem espera relevante",
+    const pisca = piscaSe(chave, grupo.length > 0 && maior >= S.pref.limiteMin);
+    return h("button", { class: "pill " + cls + (pisca ? " piscar" : "") + (S.filtro.status === st ? " on" : ""), title: maior ? "Maior espera: " + fmtMin(maior) : "Sem espera relevante",
       onclick: () => { S.filtro.status = S.filtro.status === st ? "" : st; desenharQuadro(); } },
       h("b", {}, grupo.length), " " + txt, maior >= 120 ? h("span", { class: "hint" }, " · " + fmtMin(maior)) : null);
   };
-  const pill = (num, txt, cls) => h("span", { class: "pill " + (cls || "") }, h("b", {}, num), " " + txt);
+  const pill = (num, txt, cls, chave) => h("span", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
     pill(ativos, "conjuntos ativos"),
-    pill(n("EM TRÂNSITO"), "em trânsito"),
-    pillEspera("AG. CARREGAMENTO", "aguardando carregamento"),
-    pillEspera("AG. DESCARGA", "aguardando descarga"),
-    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : ""),
-    pill(esp, "esperas ≥ 5h", esp ? "crit" : ""),
-    h("button", { class: "pill " + (com ? "warn" : "") + (S.filtro.alerta ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
+    pill(n("EM TRÂNSITO"), "em trânsito", "", "transito"),
+    pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
+    pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
+    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : "", "manutencao"),
+    pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas"),
+    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.alerta ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
     h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
+}
+function modalLegendas() {
+  const marcas = LEGENDAS.map(([k, rot]) => {
+    const cx = h("input", { type: "checkbox", style: "width:auto" });
+    cx.checked = !!S.pref.piscar[k];
+    cx.onchange = () => { S.pref.piscar[k] = cx.checked; salvarPref(); desenharResumo(); };
+    return h("label", { style: "display:flex;gap:8px;align-items:center;color:var(--tx);font-size:14px" }, cx, rot);
+  });
+  const lim = h("select", {}, [[0, "Sempre que houver carros"], [60, "A partir de 1h de espera"], [120, "A partir de 2h de espera"], [300, "A partir de 5h de espera"], [420, "A partir de 7h de espera"]]
+    .map(([v, t]) => h("option", { value: String(v) }, t)));
+  lim.value = String(S.pref.limiteMin);
+  lim.onchange = () => { S.pref.limiteMin = Number(lim.value); salvarPref(); desenharResumo(); };
+  modal("Legendas que piscam", h("div", {},
+    h("p", { class: "hint" }, "Marque as legendas do resumo que devem piscar para chamar atenção. Vale só para o seu usuário."),
+    marcas, h("label", {}, "Aguardando carregamento/descarga pisca…"), lim));
 }
 function alternarAlerta() {
   S.filtro.alerta = !S.filtro.alerta;
@@ -202,6 +231,7 @@ function desenharEstrutura() {
   $btnAlerta = h("button", { onclick: alternarAlerta }, "⚠ Só com alerta");
   const compacto = h("button", { onclick: (e) => { document.body.classList.toggle("compact"); e.currentTarget.classList.toggle("on"); } }, "Compacto");
   const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
+  const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
   $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
@@ -217,7 +247,7 @@ function desenharEstrutura() {
       h("div", {}, h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia))),
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, reset, ...botoes),
+      compacto, legendas, reset, ...botoes),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
