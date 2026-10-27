@@ -144,7 +144,7 @@ function desenharEstrutura() {
 
 function cartao(r) {
   const min = r.espera_carga_min ?? r.espera_descarga_min;
-  const card = h("div", { class: "card" + (can("status.mover") ? " drag" : ""), draggable: can("status.mover"), style: "border-left-color:" + (S.tipos[r.tipo] || "#94a3b8"),
+  const card = h("div", { class: "card" + (can("status.mover") ? " drag" : ""), draggable: can("status.mover") ? "true" : false, style: "border-left-color:" + (S.tipos[r.tipo] || "#94a3b8"),
     onclick: () => abrirGaveta(r),
     ondragstart: (e) => { e.dataTransfer.setData("text/plain", String(r.id)); e.dataTransfer.effectAllowed = "move"; } },
     h("div", { class: "pl" }, r.placa_cavalo, r.placa_implemento ? " / " + r.placa_implemento : ""),
