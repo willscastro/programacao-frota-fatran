@@ -839,14 +839,30 @@ async function abrirPainel() {
   const sel = h("select", { style: "width:auto", onchange: (e) => { dias = Number(e.target.value); desenhar(); } },
     [[1, "Hoje"], [7, "Últimos 7 dias"], [30, "Últimos 30 dias"]].map(([v, t]) => h("option", { value: v, selected: v === 7 }, t)));
   const ini = new Date(S.dia + "T12:00:00"); ini.setDate(ini.getDate() - 29);
-  const { data, error } = await sb.from("prog_programacao_v").select("*").gte("dia", ini.toISOString().slice(0, 10)).lte("dia", S.dia).limit(5000);
-  if (error) { corpo.replaceChildren(h("p", { class: "err" }, traduzErro(error))); return; }
-  const todos = data || [];
+  const todos = [];
+  for (let de = 0; de < 20000; de += 1000) { // o servidor entrega no máximo 1000 linhas por consulta
+    const { data, error } = await sb.from("prog_programacao_v").select("*").gte("dia", ini.toISOString().slice(0, 10)).lte("dia", S.dia)
+      .order("dia").order("id").range(de, de + 999);
+    if (error) { corpo.replaceChildren(h("p", { class: "err" }, traduzErro(error))); return; }
+    todos.push(...(data || []));
+    if (!data || data.length < 1000) break;
+  }
+  const quando = S.dia === S.hoje ? "hoje" : "em " + dataBR(S.dia);
 
   function desenhar() {
     const hojeR = S.rows;
     const lim = new Date(S.dia + "T12:00:00"); lim.setDate(lim.getDate() - (dias - 1));
-    const periodo = todos.filter((r) => r.dia >= lim.toISOString().slice(0, 10));
+    const noPeriodo = todos.filter((r) => r.dia >= lim.toISOString().slice(0, 10));
+    // A mesma viagem aparece em vários dias (o quadro copia o dia anterior). Conta cada viagem uma só vez,
+    // usando a linha mais recente dela (a mais completa): veículo + embarcador + chegada na carga (ou data programada).
+    const viag = new Map();
+    noPeriodo.forEach((r) => {
+      if (!r.embarcador) return;
+      const k = [r.conjunto_id, r.embarcador, r.cheg_carga || r.data_programacao || ""].join("|");
+      const ant = viag.get(k);
+      if (!ant || r.dia >= ant.dia) viag.set(k, r);
+    });
+    const periodo = [...viag.values()];
     const n = (...cods) => hojeR.filter((r) => cods.includes(r.status)).length;
     const total = hojeR.length;
     const fora = n("EM MANUTENÇÃO", "AG. PROGRAMAÇÃO", "ENTREGUE");
@@ -875,19 +891,19 @@ async function abrirPainel() {
         kpi("Ocupação da frota", ocup + "%", "ativos ÷ disponíveis (sem manutenção)"),
         kpi("Em manutenção", n("EM MANUTENÇÃO")), kpi("Com alerta", comAlerta)),
       h("div", { class: "pn-grid" },
-        barras("Frota hoje por status", porStatus),
-        h("section", { class: "pn-card" }, h("h3", {}, "Maiores esperas agora"),
+        barras("Frota " + quando + " por status", porStatus),
+        h("section", { class: "pn-card" }, h("h3", {}, S.dia === S.hoje ? "Maiores esperas agora" : "Maiores esperas no fim do dia"),
           vivos.length ? h("ul", { class: "pn-list" }, vivos.map(({ r, v }) =>
             h("li", {}, h("span", {}, r.placa_cavalo + " · " + r.status.replace("AG. ", "")), h("span", { class: "badge " + semaforo(v) }, fmtMin(v))))) : h("p", { class: "hint" }, "Ninguém aguardando agora.")),
-        barras("Próximas cargas hoje por região", contar(hojeR.filter((r) => r.proxima_carga || r.proxima_regiao), (r) => r.proxima_regiao || "Sem região")),
-        barras("Frota hoje por tipo", contar(hojeR, (r) => r.tipo))),
+        barras("Próximas cargas " + quando + " por região", contar(hojeR.filter((r) => r.proxima_carga || r.proxima_regiao), (r) => r.proxima_regiao || "Sem região")),
+        barras("Frota " + quando + " por tipo", contar(hojeR, (r) => r.tipo || "Sem tipo"))),
       h("div", { class: "row", style: "margin:16px 0 6px" }, h("h2", { style: "flex:1;margin:0;font-size:16px" }, "Período"), sel),
       h("div", { class: "pn-kpis" },
         kpi("Espera média no carregamento", esperasC.length ? fmtMin(media(esperasC.map((x) => x.v))) : "—", esperasC.length + " registro(s)"),
         kpi("Espera média na descarga", esperasD.length ? fmtMin(media(esperasD.map((x) => x.v))) : "—", esperasD.length + " registro(s)"),
-        kpi("Cargas no período", periodo.filter((r) => r.embarcador).length, "linhas com embarcador")),
+        kpi("Cargas no período", periodo.length, "viagens distintas (cada uma conta uma vez)")),
       h("div", { class: "pn-grid" },
-        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.embarcador), fmtMin, "Só viagens com chegada e saída preenchidas."),
+        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.embarcador), fmtMin, "Só viagens com chegada e saída preenchidas; cada viagem conta uma vez."),
         barras("Espera média na descarga por destino", mediaPor(esperasD, (r) => r.destino), fmtMin),
         barras("Cargas por embarcador", contar(periodo, (r) => r.embarcador).slice(0, 8)),
         barras("Cargas por motorista", contar(periodo, (r) => r.motorista).slice(0, 8))));
