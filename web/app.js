@@ -310,6 +310,7 @@ function desenharEstrutura() {
     h("option", { value: "" }, "Todos os tipos"), Object.keys(S.tipos).map((t) => h("option", { value: t }, t)));
   $btnAlerta = h("button", { onclick: alternarAlerta }, "⚠ Só com alerta");
   const compacto = h("button", { onclick: (e) => { document.body.classList.toggle("compact"); e.currentTarget.classList.toggle("on"); } }, "Compacto");
+  $btnVazias = h("button", { onclick: alternarVazias, title: "Esconde os status que não têm nenhum veículo no momento" }, "Ocultar colunas vazias");
   const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
   const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
   $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
@@ -341,7 +342,7 @@ function desenharEstrutura() {
       $sync, $btnSync,
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes),
+      compacto, $btnVazias, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
@@ -368,14 +369,24 @@ function cartao(r) {
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
 
+let $btnVazias;
+function lerPrefVazias() { try { return localStorage.getItem("prog_ocultar_vazias") === "1"; } catch (e) { return false; } }
+function alternarVazias() {
+  S.ocultarVazias = !S.ocultarVazias;
+  try { localStorage.setItem("prog_ocultar_vazias", S.ocultarVazias ? "1" : "0"); } catch (e) {}
+  desenharQuadro();
+}
 function desenharQuadro() {
   if (!$board) return;
+  if (S.ocultarVazias === undefined) S.ocultarVazias = lerPrefVazias();
   const q = ($busca.value || "").trim().toLowerCase();
   const ativos = S.status.filter((s) => s.ativo !== false);
   const passa = (r) => porResumo(r) && (!S.filtro.tipo || r.tipo === S.filtro.tipo) &&
     (!q || [r.placa_cavalo, r.placa_implemento, r.motorista, r.destino, r.embarcador, r.obs].some((v) => (v || "").toLowerCase().includes(q)));
+  let ocultas = 0;
   const cols = ativos.map((s) => {
     const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
+    if (S.ocultarVazias && !itens.length) { ocultas++; return null; }
     const col = h("section", { class: "col",
       ondragover: (e) => {
         const ehColuna = e.dataTransfer.types.includes("application/x-coluna");
@@ -393,7 +404,11 @@ function desenharQuadro() {
       itens.map(cartao));
     return col;
   });
-  $board.replaceChildren(...cols);
+  $board.replaceChildren(...cols.filter(Boolean));
+  if ($btnVazias) {
+    $btnVazias.classList.toggle("on", !!S.ocultarVazias);
+    $btnVazias.textContent = S.ocultarVazias ? "Mostrar colunas vazias" + (ocultas ? " (" + ocultas + ")" : "") : "Ocultar colunas vazias";
+  }
   desenharResumo();
 }
 
