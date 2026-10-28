@@ -866,9 +866,8 @@ async function abrirPainel() {
     const n = (...cods) => hojeR.filter((r) => cods.includes(r.status)).length;
     const total = hojeR.length;
     const fora = n("EM MANUTENÇÃO", "AG. PROGRAMAÇÃO", "ENTREGUE");
-    const operando = total - n("EM MANUTENÇÃO");
     const emViagem = n("EM TRÂNSITO", "PERNOITE", "DSR");
-    const ocup = operando ? Math.round(((total - fora) / operando) * 100) : 0;
+    const ocup = total ? Math.round(((total - fora) / total) * 100) : 0; // sobre a frota inteira: manutenção conta como parado
     const comAlerta = hojeR.filter((r) => alertas(r).length).length;
     const kpi = (rot, val, sub) => h("div", { class: "pn-kpi" }, h("div", { class: "hint" }, rot), h("div", { class: "pn-n" }, String(val)), sub ? h("div", { class: "hint" }, sub) : null);
 
@@ -888,7 +887,7 @@ async function abrirPainel() {
     corpo.replaceChildren(
       h("div", { class: "pn-kpis" },
         kpi("Conjuntos no quadro", total), kpi("Em viagem", emViagem, "trânsito + pernoite + DSR"),
-        kpi("Ocupação da frota", ocup + "%", "ativos ÷ disponíveis (sem manutenção)"),
+        kpi("Ocupação da frota", ocup + "%", "com serviço ÷ frota total (manutenção conta como parado)"),
         kpi("Em manutenção", n("EM MANUTENÇÃO")), kpi("Com alerta", comAlerta)),
       h("div", { class: "pn-grid" },
         barras("Frota " + quando + " por status", porStatus),
