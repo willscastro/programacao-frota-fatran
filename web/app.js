@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
+const S = { custoDia: 1500, perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -143,12 +143,14 @@ async function iniciar() {
 }
 
 async function carregar() {
-  const [st, rows, tp, mo] = await Promise.all([
+  const [st, rows, tp, mo, cfg] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
     sb.from("prog_tipos_conjunto").select("codigo,cor"),
     sb.from("prog_motoristas").select("id,nome,ativo").order("nome"),
+    sb.from("prog_config").select("valor").eq("chave", "custo_dia_parado").maybeSingle(),
   ]);
+  if (cfg && cfg.data && cfg.data.valor != null) S.custoDia = Number(cfg.data.valor);
   if (st.error || rows.error) { toast(traduzErro(st.error || rows.error)); return; }
   S.status = st.data; S.rows = rows.data;
   S.motoristas = mo.data || [];
@@ -221,6 +223,17 @@ function assinarTempoReal() {
   }
 }
 
+// ---------- veículo parado em manutenção: dias e custo ----------
+const BRL = (n) => Number(n || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+// Conta o dia em que parou e o dia aberto no quadro (parou 19/10 → em 28/10 são 10 dias)
+function diasParado(r) {
+  if (r.status !== "EM MANUTENÇÃO" || !r.parado_desde) return null;
+  const d = Math.round((new Date(r.dia + "T12:00:00") - new Date(r.parado_desde + "T12:00:00")) / 86400000) + 1;
+  return d > 0 ? d : null;
+}
+const custoParado = (r) => { const d = diasParado(r); return d == null ? null : d * S.custoDia; };
+const rotDias = (d) => d + (d === 1 ? " dia" : " dias");
+
 // ---------- alertas e resumo ----------
 const diaLocal = (ts) => (ts ? new Date(ts).toLocaleDateString("sv-SE", { timeZone: "America/Sao_Paulo" }) : null);
 const semZero = (x) => x.replace(/\b0(\d)/g, "$1");
@@ -239,6 +252,7 @@ function alertas(r) {
     const prev = semZero(dataBR(r.prog_entrega).slice(0, 5));
     if (!citadas.some((x) => semZero(x) === prev)) a.push({ s: "warn", t: "A observação cita " + citadas.join(", ") + ", mas a previsão de entrega é " + dataBR(r.prog_entrega) });
   }
+  if (r.status === "EM MANUTENÇÃO" && !r.parado_desde) a.push({ s: "warn", t: "Em manutenção sem a data em que o veículo parou (informe no cartão para calcular o custo)" });
   if (r.status === "EM MANUTENÇÃO" && r.carregou_em) a.push({ s: "warn", t: "Em manutenção com carga já carregada — confirmar o status" });
   if (!r.proxima_carga && r.status !== "EM MANUTENÇÃO" && r.status !== "ENTREGUE") a.push({ s: "warn", t: "Sem próxima carga definida" });
   const e = esperaViva(r);
@@ -395,6 +409,7 @@ function cartao(r) {
       al.length ? h("span", { class: "al " + pior(al), title: al.map((x) => x.t).join("\n") }, [ic("alerta"), " " + al.length]) : null),
     h("div", { class: "sub" }, [r.tipo, r.motorista].filter(Boolean).join(" · ")),
     r.destino ? h("div", { class: "sub dest" }, [ic("seta"), " " + r.destino]) : null,
+    r.status === "EM MANUTENÇÃO" ? h("div", { class: "parado" }, ic("relogio"), diasParado(r) != null ? " Parado " + rotDias(diasParado(r)) + " · " + BRL(custoParado(r)) : " Informar desde quando parou") : null,
     r.localizacao ? h("div", { class: "sub dest" }, [ic("pino"), " " + r.localizacao]) : null,
     r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
       title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
@@ -546,6 +561,7 @@ const CAMPOS = [
   ["motorista_id", "Motorista", "motorista", "programacao.editar"],
   ["placa_implemento", "Implemento (placa)", "placa", "programacao.editar"],
   ["tipo", "Tipo do conjunto", "tipo", "programacao.editar"],
+  ["parado_desde", "Parado em manutenção desde", "date", "programacao.editar"],
   ["data_programacao", "Data da programação", "date", "programacao.editar"],
   ["cheg_carga", "Chegada no carregamento", "dt", "programacao.editar"],
   ["carregou_em", "Fim do carregamento", "dt", "programacao.editar"],
@@ -562,7 +578,7 @@ const CAMPOS = [
 function fecharGaveta() { S.aberto = null; document.getElementById("gavetas").replaceChildren(); }
 function abrirGaveta(r) {
   S.aberto = r.id;
-  const els = CAMPOS.map(([k, rot, tipo, perm]) => {
+  const els = CAMPOS.filter(([k]) => k !== "parado_desde" || r.status === "EM MANUTENÇÃO").map(([k, rot, tipo, perm]) => {
     let el;
     if (tipo === "motorista") {
       el = h("select", {}, h("option", { value: "" }, "(sem motorista)"),
@@ -615,6 +631,9 @@ function abrirGaveta(r) {
   const topo = (lado) => h("div", {},
     h("div", { class: "row" }, h("h3", { style: "flex:1" }, r.placa_cavalo), h("button", { onclick: fecharGaveta }, "Fechar")),
     h("div", { class: "sub hint" }, [r.tipo, r.motorista, r.status].filter(Boolean).join(" · ")),
+    r.status === "EM MANUTENÇÃO" ? h("div", { class: "parado-box" }, ic("relogio"), " ", diasParado(r) != null
+      ? h("span", {}, h("b", {}, "Parado há " + rotDias(diasParado(r))), " (desde " + dataBR(r.parado_desde) + ") · prejuízo estimado ", h("b", {}, BRL(custoParado(r))), " (" + BRL(S.custoDia) + " por dia)")
+      : h("span", {}, "Informe abaixo desde quando está parado para calcular dias e custo.")) : null,
     lado !== "left" && r.espera_carga_min != null ? h("div", {}, "Espera no carregamento: " + fmtMin(r.espera_carga_min)) : null,
     lado !== "left" && r.espera_descarga_min != null ? h("div", {}, "Espera na descarga: " + fmtMin(r.espera_descarga_min)) : null,
     alertas(r).length ? h("ul", { class: "alertas" }, alertas(r).map((x) => h("li", { class: x.s }, x.t))) : null);
@@ -660,7 +679,18 @@ async function modalCadastro() {
       if (error) return toast(traduzErro(error));
       toast("Motorista cadastrado."); await carregar(); desenhar();
     } }, "Adicionar motorista");
+    const custo = h("input", { type: "number", min: "0", step: "50", value: String(S.custoDia), style: "max-width:140px" });
+    const salvaCusto = h("button", { class: "pri", onclick: async () => {
+      const v = Number(custo.value);
+      if (!(v >= 0)) return toast("Informe um valor válido.");
+      const { error } = await sb.from("prog_config").update({ valor: v, atualizado_em: new Date().toISOString() }).eq("chave", "custo_dia_parado");
+      if (error) return toast(traduzErro(error));
+      S.custoDia = v; toast("Valor salvo."); desenharQuadro();
+    } }, "Salvar");
     corpo.replaceChildren(
+      h("h3", {}, "Custo de veículo parado"),
+      h("label", {}, "Valor por dia parado em manutenção (R$)"), h("div", { class: "row" }, custo, salvaCusto),
+      h("p", { class: "hint" }, "Usado para calcular o prejuízo dos veículos em manutenção (dias parado × valor). Vale para todos os veículos."),
       h("h3", {}, "Conjuntos (" + cj.data.filter((x) => x.ativo).length + " ativos)"),
       h("table", {}, h("tbody", {}, cj.data.map((c) => h("tr", {}, h("td", {}, c.placa_cavalo), h("td", {}, c.placa_implemento || "—"), h("td", {}, c.tipo),
         h("td", {}, h("button", { onclick: alterna("prog_conjuntos", "id", c.id, c.ativo) }, c.ativo ? "Desativar" : "Ativar")))))),
@@ -819,8 +849,8 @@ async function abrirHistorico() {
     lista.replaceChildren(h("table", { class: "hist-t" },
       h("thead", {}, h("tr", {}, ["Quando", "Veículo", "O que mudou", "De", "Para", "Quem"].map((t) => h("th", {}, t)))),
       h("tbody", {}, vis.map((x) => h("tr", {},
-        h("td", {}, hm(x.em)), h("td", {}, h("b", {}, x.placa || "—")), h("td", {}, x.campo),
-        h("td", { class: "de" }, x.antes || "—"), h("td", { class: "para" }, x.depois || "—"),
+        h("td", {}, hm(x.em)), h("td", {}, h("b", {}, x.placa || "—")), h("td", {}, x.campo === "parado_desde" ? "Parado desde" : x.campo),
+        h("td", { class: "de" }, (x.campo === "parado_desde" ? dataBR(x.antes) : x.antes) || "—"), h("td", { class: "para" }, (x.campo === "parado_desde" ? dataBR(x.depois) : x.depois) || "—"),
         h("td", {}, h("span", { class: "tag " + (x.origem === "Planilha" ? "pl" : "sis") }, x.origem === "Planilha" ? [ic("planilha"), " Planilha"] : [ic("usuario"), " " + x.quem])))))));
   }
   const sel = h("select", { style: "width:auto", onchange: (e) => { origem = e.target.value; desenhar(); } },
@@ -874,6 +904,10 @@ async function abrirPainel() {
     const emViagem = n("EM TRÂNSITO", "PERNOITE", "DSR");
     const ocup = total ? Math.round(((total - fora) / total) * 100) : 0; // sobre a frota inteira: manutenção conta como parado
     const comAlerta = hojeR.filter((r) => alertas(r).length).length;
+    const emManut = hojeR.filter((r) => r.status === "EM MANUTENÇÃO");
+    const parados = emManut.filter((r) => diasParado(r) != null).sort((a, b) => diasParado(b) - diasParado(a));
+    const totalParado = parados.reduce((t, r) => t + custoParado(r), 0);
+    const semData = emManut.length - parados.length;
     const kpi = (rot, val, sub) => h("div", { class: "pn-kpi" }, h("div", { class: "hint" }, rot), h("div", { class: "pn-n" }, String(val)), sub ? h("div", { class: "hint" }, sub) : null);
 
     const esperasC = [], esperasD = [];
@@ -893,12 +927,18 @@ async function abrirPainel() {
       h("div", { class: "pn-kpis" },
         kpi("Conjuntos no quadro", total), kpi("Em viagem", emViagem, "trânsito + pernoite + DSR"),
         kpi("Ocupação da frota", ocup + "%", "com serviço ÷ frota total (manutenção conta como parado)"),
-        kpi("Em manutenção", n("EM MANUTENÇÃO")), kpi("Com alerta", comAlerta)),
+        kpi("Em manutenção", n("EM MANUTENÇÃO")),
+        kpi("Prejuízo acumulado (parados)", BRL(totalParado), (parados.length ? parados.length + " com data · " : "") + BRL(n("EM MANUTENÇÃO") * S.custoDia) + " a cada dia" + (semData ? " · " + semData + " sem data" : "")),
+        kpi("Com alerta", comAlerta)),
       h("div", { class: "pn-grid" },
         barras("Frota " + quando + " por status", porStatus),
         h("section", { class: "pn-card" }, h("h3", {}, S.dia === S.hoje ? "Maiores esperas agora" : "Maiores esperas no fim do dia"),
           vivos.length ? h("ul", { class: "pn-list" }, vivos.map(({ r, v }) =>
             h("li", {}, h("span", {}, r.placa_cavalo + " · " + r.status.replace("AG. ", "")), h("span", { class: "badge " + semaforo(v) }, fmtMin(v))))) : h("p", { class: "hint" }, "Ninguém aguardando agora.")),
+        h("section", { class: "pn-card" }, h("h3", {}, "Parados em manutenção"),
+          emManut.length ? h("ul", { class: "pn-list" }, emManut.map((r) =>
+            h("li", {}, h("span", {}, r.placa_cavalo + (diasParado(r) != null ? " · " + rotDias(diasParado(r)) : " · sem data")),
+              h("span", { class: "badge " + (diasParado(r) >= 7 ? "v" : diasParado(r) >= 3 ? "r" : "y") }, diasParado(r) != null ? BRL(custoParado(r)) : "informar data")))) : h("p", { class: "hint" }, "Nenhum veículo em manutenção.")),
         barras("Próximas cargas " + quando + " por região", contar(hojeR.filter((r) => r.proxima_carga || r.proxima_regiao), (r) => r.proxima_regiao || "Sem região")),
         barras("Frota " + quando + " por tipo", contar(hojeR, (r) => r.tipo || "Sem tipo"))),
       h("div", { class: "row", style: "margin:16px 0 6px" }, h("h2", { style: "flex:1;margin:0;font-size:16px" }, "Período"), sel),
