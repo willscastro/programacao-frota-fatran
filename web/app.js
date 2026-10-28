@@ -830,6 +830,11 @@ async function abrirHistorico() {
   desenhar();
 }
 
+// Junta grafias do mesmo embarcador: tira nº de OT/BC e diferenças de espaço e hífen
+// ("SIMEC - CARIACICA ES OT 094102" e "SIMEC CARIACICA ES  OT 94145" viram "SIMEC CARIACICA ES").
+function normEmb(t) {
+  return String(t || "").toUpperCase().replace(/\b(OT|BC)\s*\d+/g, " ").replace(/\s+-\s+/g, " ").replace(/\s{2,}/g, " ").trim();
+}
 async function abrirPainel() {
   const corpo = h("div", { class: "pn" }, h("p", { class: "hint" }, "Carregando…"));
   const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) m.remove(); } },
@@ -858,11 +863,11 @@ async function abrirPainel() {
     const viag = new Map();
     noPeriodo.forEach((r) => {
       if (!r.embarcador) return;
-      const k = [r.conjunto_id, r.embarcador, r.cheg_carga || r.data_programacao || ""].join("|");
+      const k = [r.conjunto_id, normEmb(r.embarcador), r.cheg_carga || r.data_programacao || ""].join("|");
       const ant = viag.get(k);
       if (!ant || r.dia >= ant.dia) viag.set(k, r);
     });
-    const periodo = [...viag.values()];
+    const periodo = [...viag.values()].map((r) => ({ ...r, emb_n: normEmb(r.embarcador) }));
     const n = (...cods) => hojeR.filter((r) => cods.includes(r.status)).length;
     const total = hojeR.length;
     const fora = n("EM MANUTENÇÃO", "AG. PROGRAMAÇÃO", "ENTREGUE");
@@ -902,9 +907,9 @@ async function abrirPainel() {
         kpi("Espera média na descarga", esperasD.length ? fmtMin(media(esperasD.map((x) => x.v))) : "—", esperasD.length + " registro(s)"),
         kpi("Cargas no período", periodo.length, "viagens distintas (cada uma conta uma vez)")),
       h("div", { class: "pn-grid" },
-        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.embarcador), fmtMin, "Só viagens com chegada e saída preenchidas; cada viagem conta uma vez."),
+        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.emb_n), fmtMin, "Só viagens com chegada e saída preenchidas; cada viagem conta uma vez."),
         barras("Espera média na descarga por destino", mediaPor(esperasD, (r) => r.destino), fmtMin),
-        barras("Cargas por embarcador", contar(periodo, (r) => r.embarcador).slice(0, 8)),
+        barras("Cargas por embarcador", contar(periodo, (r) => r.emb_n).slice(0, 8)),
         barras("Cargas por motorista", contar(periodo, (r) => r.motorista).slice(0, 8))));
   }
   desenhar();
