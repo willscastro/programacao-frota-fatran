@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { custoDia: 1500, perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
+const S = { custoDia: 1500, perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -156,7 +156,8 @@ async function carregar() {
   S.motoristas = mo.data || [];
   S.tipos = Object.fromEntries((tp.data || []).map((t) => [t.codigo, t.cor]));
   desenharQuadro();
-  if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); r ? abrirGaveta(r) : fecharGaveta(); }
+  if (S.aberto === "manut") abrirGavetaManutencao();
+  else if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); r ? abrirGaveta(r) : fecharGaveta(); }
   carregarSync();
 }
 
@@ -266,7 +267,7 @@ const LEGENDAS = [
   ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
   ["manutencao", "Em manutenção"], ["esperas", "Esperas ≥ 5h"], ["alertas", "Com alerta"],
 ];
-const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, esperas: true }, limiteMin: 120 };
+const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
 function piscaSe(chave, ativo) { return !!(S.pref.piscar[chave] && ativo); }
 async function salvarPref() {
   const { error } = await sb.auth.updateUser({ data: { pref_piscar: S.pref } });
@@ -293,11 +294,48 @@ function desenharResumo() {
     pill(n("EM TRÂNSITO"), "em trânsito", "", "transito", "status:EM TRÂNSITO"),
     pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
     pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
-    pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : "", "manutencao", "status:EM MANUTENÇÃO"),
+    pillManutencao(),
     pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas", "esperas"),
     h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ", ic("alerta")),
     h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
 }
+// Legenda "em manutenção": pisca enquanto houver veículo parado, mostra o prejuízo e abre a gaveta com as placas
+function pillManutencao() {
+  const lista = S.rows.filter((r) => r.status === "EM MANUTENÇÃO");
+  const total = lista.reduce((t, r) => t + (custoParado(r) || 0), 0);
+  const pisca = lista.length > 0 && (S.pref.piscar.manutencao ?? true);
+  return h("button", { class: "pill " + (lista.length ? "crit" : "") + (pisca ? " piscar" : "") + (S.aberto === "manut" ? " on" : ""),
+    title: lista.length ? "Clique para ver as placas em manutenção e quanto cada uma já custou" : "Nenhum veículo em manutenção",
+    onclick: abrirGavetaManutencao },
+    h("b", {}, lista.length), " em manutenção", total ? h("span", { class: "hint" }, " · " + BRL(total)) : null);
+}
+function abrirGavetaManutencao() {
+  S.aberto = "manut";
+  const lista = S.rows.filter((r) => r.status === "EM MANUTENÇÃO")
+    .sort((a, b) => (diasParado(b) ?? -1) - (diasParado(a) ?? -1));
+  const total = lista.reduce((t, r) => t + (custoParado(r) || 0), 0);
+  const semData = lista.filter((r) => diasParado(r) == null).length;
+  const aCadaDia = lista.filter((r) => diasParado(r) != null).length * S.custoDia;
+  const item = (r) => {
+    const d = diasParado(r);
+    return h("button", { class: "manut-item", title: "Abrir o cartão de " + r.placa_cavalo, onclick: () => abrirGaveta(r) },
+      h("span", { class: "manut-placa" }, h("b", {}, r.placa_cavalo), h("span", { class: "hint" }, [r.tipo, r.motorista].filter(Boolean).join(" · "))),
+      d != null
+        ? h("span", { class: "manut-custo" }, h("b", {}, BRL(custoParado(r))), h("span", { class: "hint" }, "parado há " + rotDias(d) + " (desde " + dataBR(r.parado_desde) + ")"))
+        : h("span", { class: "manut-custo" }, h("b", {}, "Informar data"), h("span", { class: "hint" }, "desde quando parou?")));
+  };
+  const lado = S.lado === "left" ? "left" : "right";
+  document.getElementById("gavetas").replaceChildren(h("aside", { class: "drawer " + lado },
+    h("div", { class: "row" }, h("h3", { style: "flex:1" }, "Veículos em manutenção"), h("button", { onclick: fecharGaveta }, "Fechar")),
+    h("div", { class: "sub hint" }, lista.length ? lista.length + (lista.length === 1 ? " veículo parado" : " veículos parados") + " · " + BRL(S.custoDia) + " por dia parado" : "Nenhum veículo em manutenção."),
+    lista.length ? h("div", { class: "parado-box manut-total" }, ic("relogio"), " ", h("span", {}, "Prejuízo acumulado: ", h("b", {}, BRL(total)),
+      aCadaDia ? " · a cada dia aumenta " + BRL(aCadaDia) : "", semData ? " · " + semData + " sem data informada" : "")) : null,
+    h("div", { class: "manut-lista" }, lista.map(item)),
+    lista.length ? h("p", { class: "hint" }, "Clique em uma placa para abrir o cartão e informar ou corrigir a data em que parou.") : null,
+    lista.length ? h("button", { onclick: () => { alternarResumo("status:EM MANUTENÇÃO"); } }, (S.filtro.resumo === "status:EM MANUTENÇÃO" ? "Mostrar todos no quadro" : "Filtrar só estes no quadro")) : null));
+  desenharResumoSeguro();
+}
+const desenharResumoSeguro = () => { try { desenharResumo(); } catch (e) {} };
 function modalLegendas() {
   const marcas = LEGENDAS.map(([k, rot]) => {
     const cx = h("input", { type: "checkbox", style: "width:auto" });
@@ -335,7 +373,8 @@ const DIAS = ["Domingo", "Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sáb
 function setLado(v) {
   S.lado = v;
   for (const [k, b] of Object.entries($lados)) b.classList.toggle("on", k === v);
-  if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); if (r) abrirGaveta(r); }
+  if (S.aberto === "manut") abrirGavetaManutencao();
+  else if (S.aberto) { const r = S.rows.find((x) => x.id === S.aberto); if (r) abrirGaveta(r); }
 }
 // ---------- navegar entre os dias (histórico guardado) ----------
 async function irParaDia(d) {
@@ -575,7 +614,7 @@ const CAMPOS = [
   ["proxima_carga", "Próxima carga", "txt", "proxima_carga.editar"],
   ["proxima_regiao", "Região da próxima carga (ES, SP…)", "txt", "proxima_carga.editar"],
 ];
-function fecharGaveta() { S.aberto = null; document.getElementById("gavetas").replaceChildren(); }
+function fecharGaveta() { const eraManut = S.aberto === "manut"; S.aberto = null; document.getElementById("gavetas").replaceChildren(); if (eraManut) desenharResumoSeguro(); }
 function abrirGaveta(r) {
   S.aberto = r.id;
   const els = CAMPOS.filter(([k]) => k !== "parado_desde" || r.status === "EM MANUTENÇÃO").map(([k, rot, tipo, perm]) => {

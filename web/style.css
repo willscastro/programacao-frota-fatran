@@ -100,4 +100,13 @@ header.top .passado{font-size:12px;color:#92400e;background:#fffbeb;border:1px s
 button .ic{margin-right:0}
 
 .card .parado{font-size:12px;color:#9a3412;background:#fff7ed;border:1px solid #fdba74;border-radius:8px;padding:3px 8px;margin-top:6px;display:inline-flex;align-items:center;gap:4px}
+.manut-lista{display:flex;flex-direction:column;gap:6px;margin:10px 0}
+.manut-item{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;width:100%;padding:10px 12px;border-radius:10px;border:1px solid #fdba74;background:#fff7ed;color:#7c2d12;cursor:pointer}
+.manut-item:hover{box-shadow:0 0 0 2px #fb923c}
+.manut-placa,.manut-custo{display:flex;flex-direction:column;gap:2px}
+.manut-custo{text-align:right}
+.manut-item b{font-size:15px}
+.manut-item .hint{color:#9a3412;font-size:12px}
+.manut-total{font-size:14px}
+@media (prefers-color-scheme:dark){.manut-item{background:#3a2412;border-color:#9a3412;color:#fed7aa}.manut-item .hint{color:#fdba74}}
 .parado-box{margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;font-size:13px}
