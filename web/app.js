@@ -19,6 +19,39 @@ function h(tag, attrs, ...filhos) {
   for (const f of filhos.flat(Infinity)) if (f != null) el.append(f.nodeType ? f : document.createTextNode(String(f)));
   return el;
 }
+
+// ---------- ícones (SVG próprio, traço único; herdam a cor do texto) ----------
+const ICONES = {
+  planilha: '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><path d="M14 2v6h6M8 13h8M8 17h8M8 9h2"/>',
+  alerta: '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3"/><path d="M12 9v4M12 17h.01"/>',
+  atualizar: '<path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/>',
+  relogio: '<circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/>',
+  sino: '<path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/>',
+  desfazer: '<path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/>',
+  mapa: '<path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z"/><path d="M9 3v15M15 6v15"/>',
+  historico: '<path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/>',
+  grafico: '<path d="M12 20V10M18 20V4M6 20v-4"/>',
+  esq: '<path d="m15 18-6-6 6-6"/>',
+  dir: '<path d="m9 18 6-6-6-6"/>',
+  ambos: '<path d="m7 7-5 5 5 5"/><path d="m17 7 5 5-5 5"/>',
+  pasta: '<path d="M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"/>',
+  seta: '<path d="M5 12h14"/><path d="m12 5 7 7-7 7"/>',
+  pino: '<path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/>',
+  gps: '<circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49M7.76 16.24a6 6 0 0 1 0-8.49M19.07 4.93a10 10 0 0 1 0 14.14M4.93 19.07a10 10 0 0 1 0-14.14"/>',
+  cima: '<path d="m5 12 7-7 7 7"/><path d="M12 19V5"/>',
+  baixo: '<path d="M12 5v14"/><path d="m19 12-7 7-7-7"/>',
+  usuario: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
+  olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
+  olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+};
+function ic(nome) {
+  const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  el.setAttribute("viewBox", "0 0 24 24"); el.setAttribute("class", "ic"); el.setAttribute("aria-hidden", "true");
+  el.innerHTML = ICONES[nome] || ""; // markup fixo definido acima
+  return el;
+}
+// Troca o conteúdo de um elemento por ícone + texto
+function rot(el, nome, texto) { el.replaceChildren(...(nome ? [ic(nome)] : []), document.createTextNode(texto ? " " + texto : "")); }
 let toastTimer;
 function toast(msg) {
   const t = document.getElementById("toast");
@@ -137,34 +170,33 @@ function desenharSync() {
   if (!$sync) return;
   if (S.dia !== S.hoje) { $sync.className = ""; $sync.textContent = ""; return; }
   const s = S.sync;
-  if (!s || !s.ultima_em) { $sync.className = "sync"; $sync.textContent = "📥 Planilha: aguardando a 1ª leitura"; return; }
+  if (!s || !s.ultima_em) { $sync.className = "sync"; rot($sync, "planilha", "Planilha: aguardando a 1ª leitura"); return; }
   const idade = Date.now() - new Date(s.ultima_em).getTime();
   const falta = new Date(s.proxima_em).getTime() - Date.now();
   const prox = falta > 60000 ? "em " + Math.ceil(falta / 60000) + " min" : "em instantes";
   const parado = idade > 12 * 60000;
   const r = s.ultimo_resumo || {};
   $sync.className = "sync" + (parado ? " atraso" : "");
-  $sync.textContent = parado
-    ? "⚠ Planilha sem atualizar desde " + horaBR(s.ultima_em) + " (" + Math.round(idade / 60000) + " min)"
-    : "📥 Planilha · última " + horaBR(s.ultima_em) + " · próxima " + prox;
+  if (parado) rot($sync, "alerta", "Planilha sem atualizar desde " + horaBR(s.ultima_em) + " (" + Math.round(idade / 60000) + " min)");
+  else rot($sync, "planilha", "Planilha · última " + horaBR(s.ultima_em) + " · próxima " + prox);
   $sync.title = "Última leitura às " + horaBR(s.ultima_em) + (r.lidas != null ? "\nVeículos lidos: " + r.lidas + " · alterados: " + (r.atualizadas || 0) + " · novos: " + (r.criadas || 0) : "") +
     "\nA planilha é lida automaticamente a cada 5 minutos.";
 }
 async function forcarSync() {
   if (S.aguardando) return;
-  $btnSync.disabled = true; $btnSync.textContent = "⏳ Pedido enviado…";
+  $btnSync.disabled = true; rot($btnSync, "relogio", "Pedido enviado…");
   const { data, error } = await sb.rpc("prog_pedir_sync");
-  if (error) { toast(traduzErro(error)); $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; return; }
+  if (error) { toast(traduzErro(error)); $btnSync.disabled = false; rot($btnSync, "atualizar", "Atualizar da planilha"); return; }
   S.aguardando = new Date(data).getTime() - 2000;
   toast("Pedido enviado. A planilha será lida em até 1 minuto.");
   clearTimeout(S.tAguardando);
-  S.tAguardando = setTimeout(() => { if (S.aguardando) { S.aguardando = null; $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; toast("Ainda não leu a planilha. Confira se o script está ligado."); } }, 150000);
+  S.tAguardando = setTimeout(() => { if (S.aguardando) { S.aguardando = null; $btnSync.disabled = false; rot($btnSync, "atualizar", "Atualizar da planilha"); toast("Ainda não leu a planilha. Confira se o script está ligado."); } }, 150000);
 }
 function fimAguardando() {
   const s = S.sync;
   if (!S.aguardando || !s || !s.ultima_em || new Date(s.ultima_em).getTime() < S.aguardando) return;
   S.aguardando = null; clearTimeout(S.tAguardando);
-  if ($btnSync) { $btnSync.disabled = false; $btnSync.textContent = "🔄 Atualizar da planilha"; }
+  if ($btnSync) { $btnSync.disabled = false; rot($btnSync, "atualizar", "Atualizar da planilha"); }
   const r = s.ultimo_resumo || {};
   toast(r.atualizadas || r.criadas ? "Planilha lida: " + (r.atualizadas || 0) + " alterado(s), " + (r.criadas || 0) + " novo(s)" : "Planilha lida: nada mudou desde a última leitura");
   carregar();
@@ -249,7 +281,7 @@ function desenharResumo() {
     pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
     pill(n("EM MANUTENÇÃO"), "em manutenção", n("EM MANUTENÇÃO") ? "crit" : "", "manutencao", "status:EM MANUTENÇÃO"),
     pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas", "esperas"),
-    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ⚠"),
+    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ", ic("alerta")),
     h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
 }
 function modalLegendas() {
@@ -308,19 +340,19 @@ function desenharEstrutura() {
   $busca = h("input", { type: "search", placeholder: "Buscar placa, motorista, destino…", style: "max-width:240px", oninput: desenharQuadro });
   const tipo = h("select", { style: "width:auto", onchange: (e) => { S.filtro.tipo = e.target.value; desenharQuadro(); } },
     h("option", { value: "" }, "Todos os tipos"), Object.keys(S.tipos).map((t) => h("option", { value: t }, t)));
-  $btnAlerta = h("button", { onclick: alternarAlerta }, "⚠ Só com alerta");
+  $btnAlerta = h("button", { onclick: alternarAlerta }, [ic("alerta"), " Só com alerta"]);
   const compacto = h("button", { onclick: (e) => { document.body.classList.toggle("compact"); e.currentTarget.classList.toggle("on"); } }, "Compacto");
-  $btnVazias = h("button", { onclick: alternarVazias, title: "Esconde os status que não têm nenhum veículo no momento" }, "Ocultar colunas vazias");
-  const reset = h("button", { title: "Atualizar", onclick: carregar }, "↺");
-  const legendas = h("button", { onclick: modalLegendas }, "🔔 Legendas");
-  $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, "↶ Desfazer");
-  const mapa = h("button", { onclick: abrirMapa }, "🗺️ Mapa");
-  $sync = S.dia === S.hoje ? h("span", { class: "sync" }, "📥 Planilha…") : h("span", { class: "sync" }, "");
-  $btnSync = BOTAO_ATUALIZAR_PLANILHA && S.dia === S.hoje && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, "🔄 Atualizar da planilha") : null;
+  $btnVazias = h("button", { onclick: alternarVazias, title: "Esconde os status que não têm nenhum veículo no momento" }, ic("olho_off"), " Ocultar colunas vazias");
+  const reset = h("button", { title: "Atualizar o quadro", onclick: carregar }, ic("atualizar"));
+  const legendas = h("button", { onclick: modalLegendas }, [ic("sino"), " Legendas"]);
+  $btnDesfazer = h("button", { onclick: desfazerUltimo, disabled: true }, [ic("desfazer"), " Desfazer"]);
+  const mapa = h("button", { onclick: abrirMapa }, [ic("mapa"), " Mapa"]);
+  $sync = S.dia === S.hoje ? h("span", { class: "sync" }, ic("planilha"), " Planilha…") : h("span", { class: "sync" }, "");
+  $btnSync = BOTAO_ATUALIZAR_PLANILHA && S.dia === S.hoje && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, [ic("atualizar"), " Atualizar da planilha"]) : null;
   desenharSync();
-  const hist = h("button", { onclick: abrirHistorico, title: "O que foi alterado hoje, de quê para quê e por quem" }, "🕘 Histórico");
-  const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, "📊 Painel") : null;
-  $lados = { left: h("button", { onclick: () => setLado("left") }, "◀ Esquerda"), both: h("button", { onclick: () => setLado("both") }, "◀▶ Ambos"), right: h("button", { class: "on", onclick: () => setLado("right") }, "Direita ▶") };
+  const hist = h("button", { onclick: abrirHistorico, title: "O que foi alterado hoje, de quê para quê e por quem" }, [ic("historico"), " Histórico"]);
+  const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, [ic("grafico"), " Painel"]) : null;
+  $lados = { left: h("button", { onclick: () => setLado("left") }, [ic("esq"), " Esquerda"]), both: h("button", { onclick: () => setLado("both") }, [ic("ambos"), " Ambos"]), right: h("button", { class: "on", onclick: () => setLado("right") }, ["Direita ", ic("dir")]) };
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
@@ -333,12 +365,12 @@ function desenharEstrutura() {
     h("header", { class: "top" },
       h("div", { style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
       h("div", { class: "diaNav" },
-        h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, "◀"),
+        h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, ic("esq")),
         h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
-        h("button", { title: "Próximo dia", disabled: !vizinho(1), onclick: () => irParaDia(vizinho(1)) }, "▶"),
+        h("button", { title: "Próximo dia", disabled: !vizinho(1), onclick: () => irParaDia(vizinho(1)) }, ic("dir")),
         h("input", { type: "date", value: S.dia, min: (S.diasLista || []).slice().sort()[0], max: S.hoje, title: "Ir para um dia", onchange: (e) => { const v = e.target.value; if ((S.diasLista || []).includes(v)) irParaDia(v); else if (v) toast("Não há registro desse dia."); } }),
         S.dia !== S.hoje ? h("button", { class: "on", onclick: () => irParaDia(S.hoje) }, "Voltar para hoje") : null,
-        S.dia !== S.hoje ? h("span", { class: "passado" }, "📁 Dia anterior · consulta") : null),
+        S.dia !== S.hoje ? h("span", { class: "passado" }, [ic("pasta"), " Dia anterior · consulta"]) : null),
       $sync, $btnSync,
       $busca, tipo, $btnAlerta,
       h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
@@ -360,12 +392,12 @@ function cartao(r) {
       soltarNoCartao(Number(e.dataTransfer.getData("text/plain")), r.id);
     } },
     h("div", { class: "pl" }, r.placa_cavalo, r.placa_implemento ? " / " + r.placa_implemento : "",
-      al.length ? h("span", { class: "al " + pior(al), title: al.map((x) => x.t).join("\n") }, "⚠ " + al.length) : null),
+      al.length ? h("span", { class: "al " + pior(al), title: al.map((x) => x.t).join("\n") }, [ic("alerta"), " " + al.length]) : null),
     h("div", { class: "sub" }, [r.tipo, r.motorista].filter(Boolean).join(" · ")),
-    r.destino ? h("div", { class: "sub dest" }, "→ " + r.destino) : null,
-    r.localizacao ? h("div", { class: "sub dest" }, "📍 " + r.localizacao) : null,
+    r.destino ? h("div", { class: "sub dest" }, [ic("seta"), " " + r.destino]) : null,
+    r.localizacao ? h("div", { class: "sub dest" }, [ic("pino"), " " + r.localizacao]) : null,
     r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
-      title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, "🛰️ GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000))) ) : null,
+      title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
 
@@ -407,7 +439,8 @@ function desenharQuadro() {
   $board.replaceChildren(...cols.filter(Boolean));
   if ($btnVazias) {
     $btnVazias.classList.toggle("on", !!S.ocultarVazias);
-    $btnVazias.textContent = S.ocultarVazias ? "Mostrar colunas vazias" + (ocultas ? " (" + ocultas + ")" : "") : "Ocultar colunas vazias";
+    if (S.ocultarVazias) rot($btnVazias, "olho", "Mostrar colunas vazias" + (ocultas ? " (" + ocultas + ")" : ""));
+    else rot($btnVazias, "olho_off", "Ocultar colunas vazias");
   }
   desenharResumo();
 }
@@ -668,8 +701,8 @@ async function modalColunas() {
       h("td", {}, h("span", { class: "dot", style: "display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:" + s.cor }), s.codigo,
         s.protegido ? h("span", { class: "hint" }, " (do sistema)") : null, s.ativo === false ? h("span", { class: "hint" }, " (oculta)") : null),
       h("td", {},
-        h("button", { disabled: i === 0, onclick: () => trocar(s, data[i - 1]) }, "↑"), " ",
-        h("button", { disabled: i === data.length - 1, onclick: () => trocar(s, data[i + 1]) }, "↓"), " ",
+        h("button", { disabled: i === 0, onclick: () => trocar(s, data[i - 1]) }, ic("cima")), " ",
+        h("button", { disabled: i === data.length - 1, onclick: () => trocar(s, data[i + 1]) }, ic("baixo")), " ",
         s.protegido ? null : [
           h("button", { onclick: async () => {
             const { error: e } = await sb.from("prog_status").update({ ativo: s.ativo === false }).eq("codigo", s.codigo);
@@ -788,7 +821,7 @@ async function abrirHistorico() {
       h("tbody", {}, vis.map((x) => h("tr", {},
         h("td", {}, hm(x.em)), h("td", {}, h("b", {}, x.placa || "—")), h("td", {}, x.campo),
         h("td", { class: "de" }, x.antes || "—"), h("td", { class: "para" }, x.depois || "—"),
-        h("td", {}, h("span", { class: "tag " + (x.origem === "Planilha" ? "pl" : "sis") }, x.origem === "Planilha" ? "📥 Planilha" : "👤 " + x.quem)))))));
+        h("td", {}, h("span", { class: "tag " + (x.origem === "Planilha" ? "pl" : "sis") }, x.origem === "Planilha" ? [ic("planilha"), " Planilha"] : [ic("usuario"), " " + x.quem])))))));
   }
   const sel = h("select", { style: "width:auto", onchange: (e) => { origem = e.target.value; desenhar(); } },
     [["", "Todas as origens"], ["Planilha", "Vindas da planilha"], ["Sistema", "Feitas no sistema"]].map(([v, t]) => h("option", { value: v }, t)));
@@ -902,7 +935,7 @@ async function abrirMapa() {
         html: '<div style="background:' + cor + ';color:#fff;border:2px solid #fff;border-radius:50%;width:34px;height:34px;display:flex;align-items:center;justify-content:center;font:700 10px system-ui;box-shadow:0 1px 4px #0006">' + (r.placa_cavalo || "").slice(-4) + "</div>" });
       const pop = document.createElement("div");
       pop.append(h("b", {}, r.placa_cavalo), h("div", {}, [r.motorista, r.status].filter(Boolean).join(" · ")),
-        r.destino ? h("div", {}, "→ " + r.destino) : "", h("div", { class: "hint" }, "Posição de há " + fmtMin(min) + (velho ? " (desatualizada)" : "")),
+        r.destino ? h("div", {}, [ic("seta"), " " + r.destino]) : "", h("div", { class: "hint" }, "Posição de há " + fmtMin(min) + (velho ? " (desatualizada)" : "")),
         h("a", { href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener" }, "Abrir no Google Maps"));
       L.marker([r.ultima_lat, r.ultima_lng], { icon: icone, title: r.placa_cavalo }).bindPopup(pop).addTo(camada);
       pts.push([r.ultima_lat, r.ultima_lng]);
