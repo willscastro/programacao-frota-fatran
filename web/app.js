@@ -73,6 +73,9 @@ function fmtMin(min) {
   return Math.floor(min / 60) + "h" + String(min % 60).padStart(2, "0");
 }
 function semaforo(min) { return min == null ? "" : min >= 420 ? "v" : min >= 300 ? "r" : min >= 120 ? "y" : ""; }
+// Nome mostrado na tela para cada status. O código no banco e na planilha continua o mesmo.
+const ROTULO_STATUS = { "AG. PROGRAMAÇÃO": "SEM CARGA" };
+const rotStatus = (c) => ROTULO_STATUS[c] || c;
 function dataBR(d) { return d ? d.split("-").reverse().join("/") : ""; }
 
 // ---------- login ----------
@@ -269,7 +272,7 @@ const pior = (al) => (al.some((x) => x.s === "crit") ? "crit" : al.length ? "war
 
 // Legendas que podem piscar (cada pessoa escolhe as suas; fica salva no usuário)
 const LEGENDAS = [
-  ["programacao", "Aguardando programação"], ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
+  ["programacao", "Sem carga"], ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
   ["manutencao", "Em manutenção"], ["esperas", "Esperas ≥ 5h"], ["alertas", "Com alerta"],
 ];
 const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
@@ -296,7 +299,7 @@ function desenharResumo() {
   const pill = (num, txt, cls, chave, filtro) => h("button", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") + (S.filtro.resumo === filtro ? " on" : ""), title: "Clique para filtrar o quadro", onclick: () => alternarResumo(filtro) }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
     pill(ativos, "conjuntos ativos", "", null, "ativos"),
-    pill(n("AG. PROGRAMAÇÃO"), "aguardando programação", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
+    pill(n("AG. PROGRAMAÇÃO"), "sem carga", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
     pill(n("EM TRÂNSITO"), "em trânsito", "", "transito", "status:EM TRÂNSITO"),
     pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
     pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
@@ -509,7 +512,7 @@ function desenharQuadro() {
       } },
       h("h2", can("colunas.gerenciar") ? { class: "arrastavel", draggable: "true", title: "Arraste para mudar a ordem da coluna",
         ondragstart: (e) => { e.dataTransfer.setData("application/x-coluna", s.codigo); e.dataTransfer.effectAllowed = "move"; } } : {},
-        h("span", {}, can("colunas.gerenciar") ? h("span", { class: "grip" }, "⠿ ") : null, h("span", { class: "dot", style: "background:" + s.cor }), s.codigo), h("span", { class: "hint" }, itens.length)),
+        h("span", {}, can("colunas.gerenciar") ? h("span", { class: "grip" }, "⠿ ") : null, h("span", { class: "dot", style: "background:" + s.cor }), rotStatus(s.codigo)), h("span", { class: "hint" }, itens.length)),
       itens.map(cartao));
     return col;
   });
@@ -689,10 +692,10 @@ function abrirGaveta(r) {
   } }, "Remover do quadro") : null;
   const mover_ = can("status.mover") ? [h("label", {}, "Status"),
     h("select", { onchange: (e) => mover(r.id, e.target.value) },
-      S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, s.codigo)))] : null;
+      S.status.filter((s) => s.ativo !== false || s.codigo === r.status).map((s) => h("option", { value: s.codigo, selected: s.codigo === r.status }, rotStatus(s.codigo))))] : null;
   const topo = (lado) => h("div", {},
     h("div", { class: "row" }, h("h3", { style: "flex:1" }, r.placa_cavalo), h("button", { onclick: fecharGaveta }, "Fechar")),
-    h("div", { class: "sub hint" }, [r.tipo, r.motorista, r.status].filter(Boolean).join(" · ")),
+    h("div", { class: "sub hint" }, [r.tipo, r.motorista, rotStatus(r.status)].filter(Boolean).join(" · ")),
     linhaRastreador(r),
     r.status === "EM MANUTENÇÃO" ? h("div", { class: "parado-box" }, ic("relogio"), " ", diasParado(r) != null
       ? h("span", {}, h("b", {}, "Parado há " + rotDias(diasParado(r))), " (desde " + dataBR(r.parado_desde) + ") · prejuízo estimado ", h("b", {}, BRL(custoParado(r))), " (" + BRL(S.custoDia) + " por dia)")
@@ -791,7 +794,7 @@ async function modalColunas() {
       await carregar(); desenhar();
     };
     const linhas = data.map((s, i) => h("tr", {},
-      h("td", {}, h("span", { class: "dot", style: "display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:" + s.cor }), s.codigo,
+      h("td", {}, h("span", { class: "dot", style: "display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px;background:" + s.cor }), rotStatus(s.codigo),
         s.protegido ? h("span", { class: "hint" }, " (do sistema)") : null, s.ativo === false ? h("span", { class: "hint" }, " (oculta)") : null),
       h("td", {},
         h("button", { disabled: i === 0, onclick: () => trocar(s, data[i - 1]) }, ic("cima")), " ",
@@ -801,7 +804,7 @@ async function modalColunas() {
             const { error: e } = await sb.from("prog_status").update({ ativo: s.ativo === false }).eq("codigo", s.codigo);
             if (e) toast(traduzErro(e)); await carregar(); desenhar(); } }, s.ativo === false ? "Mostrar" : "Ocultar"), " ",
           h("button", { class: "danger", onclick: async () => {
-            if (!confirm('Excluir a coluna "' + s.codigo + '"?')) return;
+            if (!confirm('Excluir a coluna "' + rotStatus(s.codigo) + '"?')) return;
             const { error: e } = await sb.from("prog_status").delete().eq("codigo", s.codigo);
             if (e) toast(traduzErro(e)); await carregar(); desenhar(); } }, "Excluir")])));
     const nome = h("input", { type: "text", placeholder: "Nome da nova coluna", maxlength: 30 });
@@ -817,7 +820,7 @@ async function modalColunas() {
     corpo.replaceChildren(
       h("table", {}, h("tbody", {}, linhas)),
       h("label", {}, "Nova coluna"), h("div", { class: "row" }, nome, cor, add),
-      h("p", { class: "hint" }, "Colunas com histórico não podem ser excluídas, só ocultadas. \"AG. PROGRAMAÇÃO\" e \"ENTREGUE\" são usadas pela geração automática do dia."));
+      h("p", { class: "hint" }, "Colunas com histórico não podem ser excluídas, só ocultadas. \"SEM CARGA\" e \"ENTREGUE\" são usadas pela geração automática do dia."));
   }
   desenhar();
   return m;
@@ -913,7 +916,7 @@ async function abrirHistorico() {
       h("thead", {}, h("tr", {}, ["Quando", "Veículo", "O que mudou", "De", "Para", "Quem"].map((t) => h("th", {}, t)))),
       h("tbody", {}, vis.map((x) => h("tr", {},
         h("td", {}, hm(x.em)), h("td", {}, h("b", {}, x.placa || "—")), h("td", {}, x.campo === "parado_desde" ? "Parado desde" : x.campo),
-        h("td", { class: "de" }, (x.campo === "parado_desde" ? dataBR(x.antes) : x.antes) || "—"), h("td", { class: "para" }, (x.campo === "parado_desde" ? dataBR(x.depois) : x.depois) || "—"),
+        h("td", { class: "de" }, (x.campo === "parado_desde" ? dataBR(x.antes) : x.campo === "Status" ? rotStatus(x.antes) : x.antes) || "—"), h("td", { class: "para" }, (x.campo === "parado_desde" ? dataBR(x.depois) : x.campo === "Status" ? rotStatus(x.depois) : x.depois) || "—"),
         h("td", {}, h("span", { class: "tag " + (x.origem === "Planilha" ? "pl" : "sis") }, x.origem === "Planilha" ? [ic("planilha"), " Planilha"] : [ic("usuario"), " " + x.quem])))))));
   }
   const sel = h("select", { style: "width:auto", onchange: (e) => { origem = e.target.value; desenhar(); } },
@@ -984,7 +987,7 @@ async function abrirPainel() {
       return [...g].map(([k, v]) => ({ n: k, v: media(v), extra: v.length + " viagem(ns)" })).sort((a, b) => b.v - a.v).slice(0, 8);
     };
     const vivos = hojeR.map((r) => ({ r, v: esperaViva(r) })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 5);
-    const porStatus = S.status.filter((s) => s.ativo !== false).map((s) => ({ n: s.codigo, v: hojeR.filter((r) => r.status === s.codigo).length })).filter((x) => x.v > 0);
+    const porStatus = S.status.filter((s) => s.ativo !== false).map((s) => ({ n: rotStatus(s.codigo), v: hojeR.filter((r) => r.status === s.codigo).length })).filter((x) => x.v > 0);
 
     corpo.replaceChildren(
       h("div", { class: "pn-kpis" },
