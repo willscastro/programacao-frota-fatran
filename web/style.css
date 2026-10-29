@@ -114,3 +114,5 @@ button .ic{margin-right:0}
 .rast:hover{text-decoration:underline}
 .rast.velho{color:var(--mut);opacity:.8}
 @media (prefers-color-scheme:dark){.rast{color:#6ee7b7}.rast.velho{color:var(--mut)}}
+.novaVersao{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border-radius:12px;background:#0f172a;color:#fff;box-shadow:0 6px 24px #0006;font-size:14px}
+.novaVersao button{white-space:nowrap}

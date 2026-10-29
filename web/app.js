@@ -143,6 +143,7 @@ async function iniciar() {
   desenharEstrutura();
   await carregar();
   assinarTempoReal();
+  vigiarVersao();
 }
 
 async function carregar() {
@@ -1072,4 +1073,44 @@ async function abrirMapa() {
   mapa.invalidateSize();
   await desenhar();
   timer = setInterval(desenhar, 30000);
+}
+
+// ---------- nova versão do sistema: avisa e recarrega sozinho ----------
+// Compara os arquivos do sistema publicados agora com os que esta tela carregou. Se mudaram, mostra um aviso
+// e recarrega a página quando a pessoa não estiver editando nada.
+async function assinaturaVersao() {
+  try {
+    const txt = (await Promise.all(["app.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    let x = 0;
+    for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
+    return x + ":" + txt.length;
+  } catch (e) { return null; }
+}
+let versaoCarregada = null, avisoVersao = false;
+async function checarVersao() {
+  if (avisoVersao) return;
+  const v = await assinaturaVersao();
+  if (v && versaoCarregada && v !== versaoCarregada) mostrarNovaVersao();
+}
+async function vigiarVersao() {
+  versaoCarregada = await assinaturaVersao();
+  setInterval(checarVersao, 120000);
+  document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") checarVersao(); });
+}
+function ocupado() {
+  const el = document.activeElement;
+  return !!document.querySelector(".modal, .drawer") || (el && /INPUT|TEXTAREA|SELECT/.test(el.tagName));
+}
+function mostrarNovaVersao() {
+  avisoVersao = true;
+  let resta = 20;
+  const msg = h("span", {});
+  const barra = h("div", { class: "novaVersao", role: "status" }, ic("atualizar"), " ", msg,
+    h("button", { class: "pri", onclick: () => location.reload() }, "Atualizar agora"));
+  document.body.appendChild(barra);
+  const tic = setInterval(() => {
+    if (ocupado()) { msg.textContent = "Saiu uma nova versão do sistema. Termine o que está fazendo e atualize."; resta = 20; return; }
+    msg.textContent = "Saiu uma nova versão do sistema. Atualizando em " + resta + " s…";
+    if (resta-- <= 0) { clearInterval(tic); location.reload(); }
+  }, 1000);
 }
