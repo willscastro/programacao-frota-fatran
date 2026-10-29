@@ -272,8 +272,8 @@ const pior = (al) => (al.some((x) => x.s === "crit") ? "crit" : al.length ? "war
 
 // Legendas que podem piscar (cada pessoa escolhe as suas; fica salva no usuário)
 const LEGENDAS = [
-  ["programacao", "Sem carga"], ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
-  ["manutencao", "Em manutenção"], ["esperas", "Esperas ≥ 5h"], ["alertas", "Com alerta"],
+  ["programacao", "SEM CARGA"], ["transito", "EM TRÂNSITO"], ["aguardando_carga", "AGUARDANDO CARREGAMENTO"], ["aguardando_desc", "AGUARDANDO DESCARGA"],
+  ["manutencao", "EM MANUTENÇÃO"], ["esperas", "ESPERAS ≥ 5h"], ["alertas", "COM ALERTA"],
 ];
 const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
 function piscaSe(chave, ativo) { return !!(S.pref.piscar[chave] && ativo); }
@@ -298,14 +298,14 @@ function desenharResumo() {
   };
   const pill = (num, txt, cls, chave, filtro) => h("button", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") + (S.filtro.resumo === filtro ? " on" : ""), title: "Clique para filtrar o quadro", onclick: () => alternarResumo(filtro) }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
-    pill(ativos, "conjuntos ativos", "", null, "ativos"),
-    pill(n("AG. PROGRAMAÇÃO"), "sem carga", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
-    pill(n("EM TRÂNSITO"), "em trânsito", "", "transito", "status:EM TRÂNSITO"),
-    pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
-    pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
+    pill(ativos, "CONJUNTOS ATIVOS", "", null, "ativos"),
+    pill(n("AG. PROGRAMAÇÃO"), "SEM CARGA", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
+    pill(n("EM TRÂNSITO"), "EM TRÂNSITO", "", "transito", "status:EM TRÂNSITO"),
+    pillEspera("AG. CARREGAMENTO", "AGUARDANDO CARREGAMENTO", "aguardando_carga"),
+    pillEspera("AG. DESCARGA", "AGUARDANDO DESCARGA", "aguardando_desc"),
     pillManutencao(),
-    pill(esp, "esperas ≥ 5h", esp ? "crit" : "", "esperas", "esperas"),
-    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " com alerta ", ic("alerta")),
+    pill(esp, "ESPERAS ≥ 5h", esp ? "crit" : "", "esperas", "esperas"),
+    h("button", { class: "pill " + (com ? "warn" : "") + (piscaSe("alertas", com > 0) ? " piscar" : "") + (S.filtro.resumo === "alertas" ? " on" : ""), onclick: alternarAlerta }, h("b", {}, com), " COM ALERTA ", ic("alerta")),
     h("span", { class: "hint grow" }, "Arraste os cartões para mudar o status · clique para abrir os detalhes"));
 }
 // Legenda "em manutenção": pisca enquanto houver veículo parado, mostra o prejuízo e abre a gaveta com as placas
@@ -316,7 +316,7 @@ function pillManutencao() {
   return h("button", { class: "pill " + (lista.length ? "crit" : "") + (pisca ? " piscar" : "") + (S.aberto === "manut" ? " on" : ""),
     title: lista.length ? "Clique para ver as placas em manutenção e quanto cada uma já custou" : "Nenhum veículo em manutenção",
     onclick: abrirGavetaManutencao },
-    h("b", {}, lista.length), " em manutenção", total ? h("span", { class: "hint" }, " · " + BRL(total)) : null);
+    h("b", {}, lista.length), " EM MANUTENÇÃO", total ? h("span", { class: "hint" }, " · " + BRL(total)) : null);
 }
 function abrirGavetaManutencao() {
   S.aberto = "manut";
