@@ -143,14 +143,19 @@ async function iniciar() {
 }
 
 async function carregar() {
-  const [st, rows, tp, mo, cfg] = await Promise.all([
+  const [st, rows, tp, mo, cfg, rv, rp] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
     sb.from("prog_tipos_conjunto").select("codigo,cor"),
     sb.from("prog_motoristas").select("id,nome,ativo").order("nome"),
     sb.from("prog_config").select("valor").eq("chave", "custo_dia_parado").maybeSingle(),
+    sb.from("prog_rastreador_veiculos").select("vei_id,placa"),
+    sb.from("prog_rastreador_posicao").select("*"),
   ]);
   if (cfg && cfg.data && cfg.data.valor != null) S.custoDia = Number(cfg.data.valor);
+  // Rastreador (Trucks Control): última posição por placa. Fica vazio até a integração ser ligada.
+  const placaPorVei = new Map(((rv && rv.data) || []).map((v) => [v.vei_id, v.placa]));
+  S.rast = new Map(((rp && rp.data) || []).filter((p) => placaPorVei.has(p.vei_id)).map((p) => [placaPorVei.get(p.vei_id), p]));
   if (st.error || rows.error) { toast(traduzErro(st.error || rows.error)); return; }
   S.status = st.data; S.rows = rows.data;
   S.motoristas = mo.data || [];
@@ -452,7 +457,24 @@ function cartao(r) {
     r.localizacao ? h("div", { class: "sub dest" }, [ic("pino"), " " + r.localizacao]) : null,
     r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
       title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
+    linhaRastreador(r),
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
+}
+
+// Posição do rastreador (só no quadro de hoje): "Cachoeiro/ES · BR-101 · parado · há 3 min"
+function textoRastreador(p) {
+  const local = [p.municipio ? p.municipio + (p.uf ? "/" + p.uf : "") : null, p.rodovia].filter(Boolean).join(" · ");
+  const mov = p.velocidade != null ? (p.velocidade > 0 ? "em movimento, " + p.velocidade + " km/h" : "parado") : p.ignicao === 0 ? "ignição desligada" : null;
+  const min = Math.max(0, Math.round((Date.now() - new Date(p.dt)) / 60000));
+  return { local: local || "posição recebida", mov, quando: "há " + fmtMin(min), velho: min > 60 };
+}
+function linhaRastreador(r) {
+  const p = S.dia === S.hoje && S.rast ? S.rast.get(r.placa_cavalo) : null;
+  if (!p) return null;
+  const t = textoRastreador(p);
+  const alvo = p.lat != null && p.lon != null ? { href: "https://www.google.com/maps?q=" + p.lat + "," + p.lon, target: "_blank", rel: "noopener", title: "Abrir no mapa", onclick: (e) => e.stopPropagation() } : {};
+  return h(p.lat != null ? "a" : "div", { class: "sub dest rast" + (t.velho ? " velho" : ""), ...alvo },
+    ic("gps"), " " + [t.local, t.mov, t.quando].filter(Boolean).join(" · "));
 }
 
 let $btnVazias;
@@ -670,6 +692,7 @@ function abrirGaveta(r) {
   const topo = (lado) => h("div", {},
     h("div", { class: "row" }, h("h3", { style: "flex:1" }, r.placa_cavalo), h("button", { onclick: fecharGaveta }, "Fechar")),
     h("div", { class: "sub hint" }, [r.tipo, r.motorista, r.status].filter(Boolean).join(" · ")),
+    linhaRastreador(r),
     r.status === "EM MANUTENÇÃO" ? h("div", { class: "parado-box" }, ic("relogio"), " ", diasParado(r) != null
       ? h("span", {}, h("b", {}, "Parado há " + rotDias(diasParado(r))), " (desde " + dataBR(r.parado_desde) + ") · prejuízo estimado ", h("b", {}, BRL(custoParado(r))), " (" + BRL(S.custoDia) + " por dia)")
       : h("span", {}, "Informe abaixo desde quando está parado para calcular dias e custo.")) : null,

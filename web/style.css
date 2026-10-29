@@ -110,3 +110,7 @@ button .ic{margin-right:0}
 .manut-total{font-size:14px}
 @media (prefers-color-scheme:dark){.manut-item{background:#3a2412;border-color:#9a3412;color:#fed7aa}.manut-item .hint{color:#fdba74}}
 .parado-box{margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;font-size:13px}
+.rast{display:flex;align-items:center;gap:4px;color:#0f5c3a;text-decoration:none}
+.rast:hover{text-decoration:underline}
+.rast.velho{color:var(--mut);opacity:.8}
+@media (prefers-color-scheme:dark){.rast{color:#6ee7b7}.rast.velho{color:var(--mut)}}
