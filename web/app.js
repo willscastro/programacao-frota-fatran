@@ -269,7 +269,7 @@ const pior = (al) => (al.some((x) => x.s === "crit") ? "crit" : al.length ? "war
 
 // Legendas que podem piscar (cada pessoa escolhe as suas; fica salva no usuário)
 const LEGENDAS = [
-  ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
+  ["programacao", "Aguardando programação"], ["transito", "Em trânsito"], ["aguardando_carga", "Aguardando carregamento"], ["aguardando_desc", "Aguardando descarga"],
   ["manutencao", "Em manutenção"], ["esperas", "Esperas ≥ 5h"], ["alertas", "Com alerta"],
 ];
 const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
@@ -296,6 +296,7 @@ function desenharResumo() {
   const pill = (num, txt, cls, chave, filtro) => h("button", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") + (S.filtro.resumo === filtro ? " on" : ""), title: "Clique para filtrar o quadro", onclick: () => alternarResumo(filtro) }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
     pill(ativos, "conjuntos ativos", "", null, "ativos"),
+    pill(n("AG. PROGRAMAÇÃO"), "aguardando programação", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
     pill(n("EM TRÂNSITO"), "em trânsito", "", "transito", "status:EM TRÂNSITO"),
     pillEspera("AG. CARREGAMENTO", "aguardando carregamento", "aguardando_carga"),
     pillEspera("AG. DESCARGA", "aguardando descarga", "aguardando_desc"),
