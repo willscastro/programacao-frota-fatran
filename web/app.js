@@ -76,6 +76,7 @@ function semaforo(min) { return min == null ? "" : min >= 420 ? "v" : min >= 300
 // Nome mostrado na tela para cada status. O código no banco e na planilha continua o mesmo.
 const ROTULO_STATUS = { "AG. PROGRAMAÇÃO": "SEM CARGA" };
 const rotStatus = (c) => ROTULO_STATUS[c] || c;
+const dtCurta = (t) => (t ? new Date(t).toLocaleString("pt-BR", { timeZone: "America/Sao_Paulo", day: "2-digit", month: "2-digit", hour: "2-digit", minute: "2-digit" }).replace(",", "") : "");
 function dataBR(d) { return d ? d.split("-").reverse().join("/") : ""; }
 
 // ---------- login ----------
@@ -288,6 +289,7 @@ function desenharResumo() {
   const n = (st) => S.rows.filter((r) => r.status === st).length;
   const esp = S.rows.filter((r) => (esperaViva(r) ?? 0) >= 300).length;
   const com = S.rows.filter((r) => alertas(r).length).length;
+  const maiorSemCarga = Math.max(0, ...S.rows.filter((r) => r.status === "AG. PROGRAMAÇÃO").map((r) => r.sem_carga_min ?? 0));
   const pillEspera = (st, txt, chave) => {
     const grupo = S.rows.filter((r) => r.status === st);
     const maior = Math.max(0, ...grupo.map((r) => esperaViva(r) ?? 0));
@@ -300,7 +302,7 @@ function desenharResumo() {
   const pill = (num, txt, cls, chave, filtro) => h("button", { class: "pill " + (cls || "") + (chave && piscaSe(chave, num > 0) ? " piscar" : "") + (S.filtro.resumo === filtro ? " on" : ""), title: "Clique para filtrar o quadro", onclick: () => alternarResumo(filtro) }, h("b", {}, num), " " + txt);
   $resumo.replaceChildren(
     pill(ativos, "CONJUNTOS ATIVOS", "", null, "ativos"),
-    pill(n("AG. PROGRAMAÇÃO"), "SEM CARGA", n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
+    pill(n("AG. PROGRAMAÇÃO"), "SEM CARGA" + (maiorSemCarga >= 60 ? " · " + fmtMin(maiorSemCarga) : ""), n("AG. PROGRAMAÇÃO") ? "warn" : "", "programacao", "status:AG. PROGRAMAÇÃO"),
     pill(n("EM TRÂNSITO"), "EM TRÂNSITO", "", "transito", "status:EM TRÂNSITO"),
     pillEspera("AG. CARREGAMENTO", "AGUARDANDO CARREGAMENTO", "aguardando_carga"),
     pillEspera("AG. DESCARGA", "AGUARDANDO DESCARGA", "aguardando_desc"),
@@ -463,6 +465,7 @@ function cartao(r) {
     r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
       title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
     linhaRastreador(r),
+    r.status === "AG. PROGRAMAÇÃO" && r.sem_carga_min != null && r.sem_carga_min > 0 ? h("span", { class: "badge dest " + semaforo(r.sem_carga_min), title: "Sem carga desde " + dtCurta(r.status_desde) }, "sem carga " + fmtMin(r.sem_carga_min)) : null,
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
 
@@ -701,6 +704,7 @@ function abrirGaveta(r) {
     r.status === "EM MANUTENÇÃO" ? h("div", { class: "parado-box" }, ic("relogio"), " ", diasParado(r) != null
       ? h("span", {}, h("b", {}, "Parado há " + rotDias(diasParado(r))), " (desde " + dataBR(r.parado_desde) + ") · prejuízo estimado ", h("b", {}, BRL(custoParado(r))), " (" + BRL(S.custoDia) + " por dia)")
       : h("span", {}, "Informe abaixo desde quando está parado para calcular dias e custo.")) : null,
+    r.status === "AG. PROGRAMAÇÃO" && r.sem_carga_min != null ? h("div", {}, "Sem carga há " + fmtMin(r.sem_carga_min) + " (desde " + dtCurta(r.status_desde) + ")") : null,
     lado !== "left" && r.espera_carga_min != null ? h("div", {}, "Espera no carregamento: " + fmtMin(r.espera_carga_min)) : null,
     lado !== "left" && r.espera_descarga_min != null ? h("div", {}, "Espera na descarga: " + fmtMin(r.espera_descarga_min)) : null,
     alertas(r).length ? h("ul", { class: "alertas" }, alertas(r).map((x) => h("li", { class: x.s }, x.t))) : null);

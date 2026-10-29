@@ -1,0 +1,7 @@
+-- APLICADO no Supabase (29/10/2026): tempo em que o veículo está no status atual ("sem carga há X")
+-- 1) prog_programacao.status_desde (timestamptz, default now()); preenchido para o passado dia a dia (herda do dia anterior se o status se manteve)
+-- 2) trigger c_prog_programacao_status_desde: ao mudar o status, grava now()
+-- 3) prog_gerar_dia_interno: copia status_desde de ontem quando o status se mantém; ENTREGUE -> AG. PROGRAMAÇÃO começa agora
+-- 4) prog_programacao_v: novas colunas status_desde e sem_carga_min (congela no fim do dia nos dias passados)
+-- 5) prog_historico: ignora a coluna status_desde (não é alteração feita por pessoa)
+-- (as definições completas das funções e da view foram aplicadas por migração no Supabase)
