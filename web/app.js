@@ -4,7 +4,7 @@ const SUPABASE_URL = "https://rmlbnqnnanrkvoeqntim.supabase.co";
 const SUPABASE_KEY = "sb_publishable_AZsrZk-4UDIY_G0b8fJojg_DRXeiA7j";
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-const S = { custoDia: 1500, perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
+const S = { custoDia: 1500, perfil: null, perms: new Set(), dia: null, status: [], rows: [], tipos: {}, lado: "right", aberto: null, canal: null, desfazer: [], tela: "quadro", motoristas: [], pref: JSON.parse(JSON.stringify({ piscar: { programacao: true, aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 })), filtro: { tipo: "", resumo: "" } };
 const $app = document.getElementById("app");
 const can = (p) => S.perms.has(p);
 
@@ -277,7 +277,7 @@ const LEGENDAS = [
   ["programacao", "SEM CARGA"], ["transito", "EM TRÂNSITO"], ["aguardando_carga", "AGUARDANDO CARREGAMENTO"], ["aguardando_desc", "AGUARDANDO DESCARGA"],
   ["manutencao", "EM MANUTENÇÃO"], ["esperas", "ESPERAS ≥ 5h"], ["alertas", "COM ALERTA"],
 ];
-const PREF_PADRAO = { piscar: { aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
+const PREF_PADRAO = { piscar: { programacao: true, aguardando_carga: true, aguardando_desc: true, manutencao: true, esperas: true }, limiteMin: 120 };
 function piscaSe(chave, ativo) { return !!(S.pref.piscar[chave] && ativo); }
 async function salvarPref() {
   const { error } = await sb.auth.updateUser({ data: { pref_piscar: S.pref } });
