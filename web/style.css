@@ -110,6 +110,13 @@ button .ic{margin-right:0}
 .manut-total{font-size:14px}
 @media (prefers-color-scheme:dark){.manut-item{background:#3a2412;border-color:#9a3412;color:#fed7aa}.manut-item .hint{color:#fdba74}}
 .parado-box{margin:8px 0;padding:8px 10px;border-radius:10px;background:#fff7ed;border:1px solid #fdba74;color:#7c2d12;font-size:13px}
+.manut-ag{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:6px;font-size:12px}
+.manut-ag-cx{display:inline-flex;align-items:center;gap:5px;margin:0;font-size:12px;color:var(--mut);cursor:pointer}
+.manut-ag-cx input{width:auto;margin:0;padding:0}
+.manut-ag-ic{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:999px;border-color:#fdba74;background:#fff7ed;color:#9a3412;font-size:12px}
+.manut-ag-ic:hover{box-shadow:0 0 0 2px #fb923c}
+.manut-ag.atrasada .manut-ag-ic{background:#fecaca;border-color:#d14343;color:#7f1d1d}
+@media (prefers-color-scheme:dark){.manut-ag-ic{background:#3a2412;border-color:#9a3412;color:#fed7aa}.manut-ag.atrasada .manut-ag-ic{background:#4b1d1d;color:#fecaca}}
 .rast{display:flex;align-items:center;gap:4px;color:#0f5c3a;text-decoration:none}
 .rast:hover{text-decoration:underline}
 .rast.velho{color:var(--mut);opacity:.8}

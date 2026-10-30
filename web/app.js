@@ -43,6 +43,7 @@ const ICONES = {
   usuario: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
   olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  chave: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
 };
 function ic(nome) {
   const el = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -148,7 +149,7 @@ async function iniciar() {
 }
 
 async function carregar() {
-  const [st, rows, tp, mo, cfg, rv, rp] = await Promise.all([
+  const [st, rows, tp, mo, cfg, rv, rp, ma] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
     sb.from("prog_tipos_conjunto").select("codigo,cor"),
@@ -156,7 +157,10 @@ async function carregar() {
     sb.from("prog_config").select("valor").eq("chave", "custo_dia_parado").maybeSingle(),
     sb.from("prog_rastreador_veiculos").select("vei_id,placa"),
     sb.from("prog_rastreador_posicao").select("*"),
+    sb.from("prog_manutencao_agendada").select("*").eq("situacao", "agendada"),
   ]);
+  // Manutenção agendada (uma por conjunto): aparece como caixa marcada + chave no bloco do veículo
+  S.manutAg = new Map(((ma && ma.data) || []).map((m) => [m.conjunto_id, m]));
   if (cfg && cfg.data && cfg.data.valor != null) S.custoDia = Number(cfg.data.valor);
   // Rastreador (Trucks Control): última posição por placa. Fica vazio até a integração ser ligada.
   const placaPorVei = new Map(((rv && rv.data) || []).map((v) => [v.vei_id, v.placa]));
@@ -223,6 +227,7 @@ function assinarTempoReal() {
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_programacao" }, recarregar)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_status" }, recarregar)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_sync_status" }, carregarSync)
+    .on("postgres_changes", { event: "*", schema: "public", table: "prog_manutencao_agendada" }, recarregar)
     .subscribe();
   if (!S.relogioSync) S.relogioSync = setInterval(desenharSync, 20000);
   // Rede de segurança: se o tempo real falhar, atualiza ao voltar para a aba e a cada 10 s
@@ -465,8 +470,81 @@ function cartao(r) {
     r.ultima_lat != null ? h("a", { class: "sub dest", href: "https://www.google.com/maps?q=" + r.ultima_lat + "," + r.ultima_lng, target: "_blank", rel: "noopener",
       title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
     linhaRastreador(r),
+    linhaManutAgendada(r),
     r.status === "AG. PROGRAMAÇÃO" && r.sem_carga_min != null && r.sem_carga_min > 0 ? h("span", { class: "badge dest " + semaforo(r.sem_carga_min), title: "Sem carga desde " + dtCurta(r.status_desde) }, "sem carga " + fmtMin(r.sem_carga_min)) : null,
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
+}
+
+// ---------- manutenção agendada: caixa de seleção + chave no bloco ----------
+function atrasadaManut(m) { return !!m && m.data_agendada < S.hoje; }
+function linhaManutAgendada(r) {
+  const m = S.manutAg && S.manutAg.get(r.conjunto_id);
+  const pode = can("programacao.editar");
+  if (!m && !pode) return null;
+  const parar = (e) => e.stopPropagation();
+  const caixa = h("input", { type: "checkbox", checked: !!m, disabled: !pode, "aria-label": "Manutenção agendada",
+    onclick: (e) => {
+      e.preventDefault(); e.stopPropagation();
+      if (m) cancelarManutAgendada(m, r); else formManutAgendada(r, null);
+    } });
+  caixa.checked = !!m;
+  return h("div", { class: "manut-ag" + (atrasadaManut(m) ? " atrasada" : ""), onclick: parar, draggable: false },
+    h("label", { class: "manut-ag-cx", title: m ? "Desmarcar cancela o agendamento" : "Marcar para agendar uma manutenção", onclick: parar }, caixa, " Manutenção agendada"),
+    m ? h("button", { type: "button", class: "manut-ag-ic", title: "Ver dados da manutenção", "aria-label": "Ver dados da manutenção agendada",
+      onclick: (e) => { e.stopPropagation(); infoManutAgendada(r, m); } }, ic("chave"), " " + dataBR(m.data_agendada)) : null);
+}
+function infoManutAgendada(r, m) {
+  const linha = (rotulo, valor) => h("tr", {}, h("th", { style: "width:34%;color:var(--mut);font-weight:500" }, rotulo), h("td", {}, valor || h("span", { class: "hint" }, "Não informado")));
+  const quando = dataBR(m.data_agendada) + (m.hora ? " às " + m.hora.slice(0, 5) : "");
+  const corpo = h("div", {},
+    h("p", { class: "hint", style: "margin:8px 0" }, r.placa_cavalo + (r.tipo ? " · " + r.tipo : "")),
+    atrasadaManut(m) ? h("div", { class: "parado-box" }, ic("alerta"), " A data agendada já passou e a manutenção ainda não foi concluída.") : null,
+    h("table", {}, linha("Dia agendado", quando), linha("Onde", m.local), linha("Serviços", m.servicos), linha("Observações", m.obs)));
+  const mo = modal("Manutenção agendada", corpo);
+  if (can("programacao.editar")) {
+    corpo.append(h("div", { class: "row", style: "margin-top:14px;gap:8px;flex-wrap:wrap" },
+      h("button", { class: "pri", onclick: async () => {
+        const { error } = await sb.from("prog_manutencao_agendada").update({ situacao: "concluida" }).eq("id", m.id);
+        if (error) { toast(traduzErro(error)); return; }
+        mo.fechar(); toast("Manutenção marcada como concluída."); carregar();
+      } }, "Marcar como concluída"),
+      h("button", { onclick: () => { mo.fechar(); formManutAgendada(r, m); } }, "Editar"),
+      h("button", { class: "danger", onclick: () => { mo.fechar(); cancelarManutAgendada(m, r); } }, "Cancelar agendamento")));
+  }
+}
+async function cancelarManutAgendada(m, r) {
+  if (!confirm("Cancelar a manutenção agendada de " + r.placa_cavalo + " para " + dataBR(m.data_agendada) + "?")) { carregar(); return; }
+  const { error } = await sb.from("prog_manutencao_agendada").update({ situacao: "cancelada" }).eq("id", m.id);
+  if (error) { toast(traduzErro(error)); carregar(); return; }
+  toast("Agendamento cancelado."); carregar();
+}
+function formManutAgendada(r, m) {
+  const f = {
+    data: h("input", { type: "date", value: m ? m.data_agendada : "", min: S.hoje }),
+    hora: h("input", { type: "time", value: m && m.hora ? m.hora.slice(0, 5) : "" }),
+    local: h("input", { type: "text", value: m ? m.local || "" : "", placeholder: "Oficina ou cidade", maxlength: 120 }),
+    servicos: h("textarea", { rows: 3, placeholder: "Ex.: troca de óleo, freios, pneus", maxlength: 600 }),
+    obs: h("textarea", { rows: 2, maxlength: 600 }),
+  };
+  f.servicos.value = m ? m.servicos || "" : ""; f.obs.value = m ? m.obs || "" : "";
+  const erro = h("div", { class: "err" });
+  const mo = modal(m ? "Editar manutenção agendada" : "Agendar manutenção", h("div", {},
+    h("p", { class: "hint", style: "margin:8px 0 0" }, r.placa_cavalo + (r.tipo ? " · " + r.tipo : "")),
+    h("label", {}, "Dia agendado"), f.data, h("label", {}, "Horário (opcional)"), f.hora,
+    h("label", {}, "Onde"), f.local, h("label", {}, "Serviços"), f.servicos, h("label", {}, "Observações"), f.obs, erro,
+    h("div", { class: "row", style: "margin-top:12px;justify-content:flex-end" },
+      h("button", { onclick: () => { mo.fechar(); carregar(); } }, "Cancelar"),
+      h("button", { class: "pri", onclick: async (e) => {
+        if (!f.data.value) { erro.textContent = "Informe o dia agendado."; return; }
+        if (!f.servicos.value.trim() && !f.local.value.trim()) { erro.textContent = "Informe ao menos os serviços ou o local."; return; }
+        e.target.disabled = true;
+        const dados = { data_agendada: f.data.value, hora: f.hora.value || null, local: f.local.value.trim() || null,
+          servicos: f.servicos.value.trim() || null, obs: f.obs.value.trim() || null };
+        const { error } = m ? await sb.from("prog_manutencao_agendada").update(dados).eq("id", m.id)
+          : await sb.from("prog_manutencao_agendada").insert({ ...dados, conjunto_id: r.conjunto_id });
+        if (error) { erro.textContent = traduzErro(error); e.target.disabled = false; return; }
+        mo.fechar(); toast("Manutenção agendada salva."); carregar();
+      } }, "Salvar"))));
 }
 
 // Posição do rastreador (só no quadro de hoje): "Cachoeiro/ES · BR-101 · parado · há 3 min"
