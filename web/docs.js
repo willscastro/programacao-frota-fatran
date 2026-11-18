@@ -208,7 +208,8 @@ function classificarArquivo(file) {
   if (N.includes("CRLV") && placa) {
     if (N.includes("VENDIDO")) return [{ ignorado: "veículo vendido" }];
     const ex = (N.match(/_(20\d{2})/) || [])[1];
-    return [{ tipo: "CRLV", placa, obs: ex ? "Exercício " + ex : null }];
+    const v = N.match(/VAL\D{0,6}(\d{2})[.\/-](\d{2})[.\/-](20\d{2})/);
+    return [{ tipo: "CRLV", placa, obs: ex ? "Exercício " + ex : null, validade: v ? v[3] + "-" + v[2] + "-" + v[1] : null }];
   }
   const rePasta = /^\s*\d+\s*-\s*(.+?)\s*$/;
   const pai = pastas[pastas.length - 1];
