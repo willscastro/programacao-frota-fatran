@@ -64,7 +64,7 @@ function mostrarInicio() {
       const a = (-90 + (360 / n) * i) * Math.PI / 180;
       const x = rx * Math.cos(a), y = ry * Math.sin(a);
       nos[i].style.setProperty("--x", x.toFixed(1) + "px"); nos[i].style.setProperty("--y", y.toFixed(1) + "px");
-      fios[i].style.setProperty("--len", Math.hypot(x, y).toFixed(1) + "px");
+      fios[i].style.setProperty("--len", Math.max(0, Math.hypot(x, y) - 88 - 46).toFixed(1) + "px"); // da borda da logo até perto do módulo
       fios[i].style.setProperty("--ang", (Math.atan2(y, x) * 180 / Math.PI).toFixed(2) + "deg");
     });
   }
