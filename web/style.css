@@ -255,3 +255,5 @@ header.top .filtros,header.top .ferramentas{display:contents}
   .hub-rot{margin:0}.hub-tag{margin-top:3px}
 }
 @media (prefers-reduced-motion:reduce){.hub-anel{animation:none}.hub-no,.hub-fio,.hub-orbita,.hub-centro,.hub-grade,.hub-cartao{transition-duration:.01s!important;transition-delay:0s!important;animation-duration:.01s!important}}
+
+.hub:not(.pronto) *{transition:none!important;animation:none!important}
