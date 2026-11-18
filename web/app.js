@@ -431,7 +431,7 @@ function desenharEstrutura() {
   $btnSync = BOTAO_ATUALIZAR_PLANILHA && S.dia === S.hoje && can("programacao.editar") ? h("button", { onclick: forcarSync, title: "Pede para ler a planilha agora (leva até 1 minuto)" }, [ic("atualizar"), " Atualizar da planilha"]) : null;
   desenharSync();
   const hist = h("button", { onclick: abrirHistorico, title: "O que foi alterado hoje, de quê para quê e por quem" }, [ic("historico"), " Histórico"]);
-  const painel = can("dashboard.ver") ? h("button", { onclick: abrirPainel }, [ic("grafico"), " Painel"]) : null;
+  const painel = can("dashboard.ver") ? h("button", { onclick: () => abrirPainel() }, [ic("grafico"), " Painel"]) : null;
   $lados = { left: h("button", { onclick: () => setLado("left") }, [ic("esq"), " Esquerda"]), both: h("button", { onclick: () => setLado("both") }, [ic("ambos"), " Ambos"]), right: h("button", { class: "on", onclick: () => setLado("right") }, ["Direita ", ic("dir")]) };
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
@@ -1032,11 +1032,14 @@ async function abrirHistorico() {
 function normEmb(t) {
   return String(t || "").toUpperCase().replace(/\b(OT|BC)\s*\d+/g, " ").replace(/\s+-\s+/g, " ").replace(/\s{2,}/g, " ").trim();
 }
-async function abrirPainel() {
-  const corpo = h("div", { class: "pn" }, h("p", { class: "hint" }, "Carregando…"));
-  const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) m.remove(); } },
-    h("div", { class: "box" }, h("div", { class: "row" }, h("h2", { style: "flex:1;margin:0" }, "Painel de indicadores"), h("button", { onclick: () => m.remove() }, "Fechar")), corpo));
-  document.body.append(m);
+async function abrirPainel(destino) { // destino: elemento da tela própria de Indicadores; sem ele, abre em janela sobre o quadro
+  const corpo = destino || h("div", { class: "pn" }, h("p", { class: "hint" }, "Carregando…"));
+  if (destino) { destino.classList.add("pn"); destino.replaceChildren(h("p", { class: "hint" }, "Carregando…")); }
+  else {
+    const m = h("div", { class: "modal painel", onclick: (e) => { if (e.target === m) m.remove(); } },
+      h("div", { class: "box" }, h("div", { class: "row" }, h("h2", { style: "flex:1;margin:0" }, "Painel de indicadores"), h("button", { onclick: () => m.remove() }, "Fechar")), corpo));
+    document.body.append(m);
+  }
   let dias = 7;
   const sel = h("select", { style: "width:auto", onchange: (e) => { dias = Number(e.target.value); desenhar(); } },
     [[1, "Hoje"], [7, "Últimos 7 dias"], [30, "Últimos 30 dias"]].map(([v, t]) => h("option", { value: v, selected: v === 7 }, t)));
@@ -1180,7 +1183,7 @@ async function abrirMapa() {
 // e recarrega a página quando a pessoa não estiver editando nada.
 async function assinaturaVersao() {
   try {
-    const txt = (await Promise.all(["app.js", "docs.js", "inicio.js", "envio.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    const txt = (await Promise.all(["app.js", "docs.js", "inicio.js", "envio.js", "indicadores.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
     let x = 0;
     for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
     return x + ":" + txt.length;

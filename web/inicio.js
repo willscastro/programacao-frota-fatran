@@ -88,12 +88,12 @@ function mostrarInicioLayout() { if (window.__hubLayout) window.__hubLayout(); }
 async function abrirModulo(id) {
   if (id === "mapa" || id === "manut") return;
   if (id === "docs") return telaEnvioDocs(); // tela própria: não abre o quadro
+  if (id === "painel") return telaIndicadores(); // tela própria: não abre o quadro
   const primeira = !S.quadroIniciado;
   S.tela = "quadro";
   desenharEstrutura();
   await carregar();
   if (primeira) { S.quadroIniciado = true; assinarTempoReal(); }
-  if (id === "painel") abrirPainel();
-  else if (id === "adm") modalUsuarios();
+  if (id === "adm") modalUsuarios();
 }
 function voltarInicio() { if (S.tela === "quadro") fecharGaveta(); document.querySelectorAll(".modal").forEach((m) => m.remove()); mostrarInicio(); }

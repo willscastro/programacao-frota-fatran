@@ -262,7 +262,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub:not(.pronto) *{transition:none!important;animation:none!important}
 
 /* ---------- tela de Envio de documentos (própria, fora do quadro) ---------- */
-.ed{--az:#1D9AD5;--az2:#0A74AA;--gf:#12263A;--tx2:#2F4558;--bd2:#D3E6F0;min-height:100vh;display:flex;flex-direction:column;background:#F3F8FB;color:var(--gf)}
+.ed{--bg:#F3F8FB;--card:#fff;--tx:#12263A;--mut:#5d7385;--bd:#D3E6F0;--az:#1D9AD5;--az2:#0A74AA;--gf:#12263A;--tx2:#2F4558;--bd2:#D3E6F0;min-height:100vh;display:flex;flex-direction:column;background:#F3F8FB;color:var(--gf)}
 .ed button{border-color:var(--bd2);background:#fff;color:var(--gf)}
 .ed .hub-topo{position:sticky;top:0}
 .ed-esq{display:flex;align-items:center;gap:14px}
