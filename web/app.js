@@ -43,6 +43,11 @@ const ICONES = {
   usuario: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
   olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  enviar: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
+  anexo: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
+  upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
+  lixo: '<path d="M3 6h18"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+  copiar: '<rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   chave: '<path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>',
 };
 function ic(nome) {
@@ -149,7 +154,7 @@ async function iniciar() {
 }
 
 async function carregar() {
-  const [st, rows, tp, mo, cfg, rv, rp, ma] = await Promise.all([
+  const [st, rows, tp, mo, cfg, rv, rp, ma, dc] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
     sb.from("prog_tipos_conjunto").select("codigo,cor"),
@@ -158,7 +163,9 @@ async function carregar() {
     sb.from("prog_rastreador_veiculos").select("vei_id,placa"),
     sb.from("prog_rastreador_posicao").select("*"),
     sb.from("prog_manutencao_agendada").select("*").eq("situacao", "agendada"),
+    sb.from("prog_documentos").select("id,tipo,placa,motorista_id,arquivo,nome_original,mime,validade,obs,criado_em"),
   ]);
+  S.docs = (dc && dc.data) || [];
   // Manutenção agendada (uma por conjunto): aparece como caixa marcada + chave no bloco do veículo
   S.manutAg = new Map(((ma && ma.data) || []).map((m) => [m.conjunto_id, m]));
   if (cfg && cfg.data && cfg.data.valor != null) S.custoDia = Number(cfg.data.valor);
@@ -228,6 +235,7 @@ function assinarTempoReal() {
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_status" }, recarregar)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_sync_status" }, carregarSync)
     .on("postgres_changes", { event: "*", schema: "public", table: "prog_manutencao_agendada" }, recarregar)
+    .on("postgres_changes", { event: "*", schema: "public", table: "prog_documentos" }, recarregar)
     .subscribe();
   if (!S.relogioSync) S.relogioSync = setInterval(desenharSync, 20000);
   // Rede de segurança: se o tempo real falhar, atualiza ao voltar para a aba e a cada 10 s
@@ -425,6 +433,7 @@ function desenharEstrutura() {
   $lados = { left: h("button", { onclick: () => setLado("left") }, [ic("esq"), " Esquerda"]), both: h("button", { onclick: () => setLado("both") }, [ic("ambos"), " Ambos"]), right: h("button", { class: "on", onclick: () => setLado("right") }, ["Direita ", ic("dir")]) };
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
+  if (can("programacao.editar")) botoes.push(h("button", { onclick: modalDocumentos }, [ic("anexo"), " Documentos"]));
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
   if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalUsuarios }, "Usuários"));
   botoes.push(h("button", { onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"));
@@ -471,6 +480,7 @@ function cartao(r) {
       title: "Abrir no mapa", onclick: (e) => e.stopPropagation() }, [ic("gps"), " GPS há " + fmtMin(Math.max(0, Math.round((Date.now() - new Date(r.ultima_posicao_em)) / 60000)))] ) : null,
     linhaRastreador(r),
     linhaManutAgendada(r),
+    botaoMandar(r),
     r.status === "AG. PROGRAMAÇÃO" && r.sem_carga_min != null && r.sem_carga_min > 0 ? h("span", { class: "badge dest " + semaforo(r.sem_carga_min), title: "Sem carga desde " + dtCurta(r.status_desde) }, "sem carga " + fmtMin(r.sem_carga_min)) : null,
     min != null && min > 0 ? h("span", { class: "badge dest " + semaforo(min) }, "espera " + fmtMin(min)) : null);
 }
@@ -1162,7 +1172,7 @@ async function abrirMapa() {
 // e recarrega a página quando a pessoa não estiver editando nada.
 async function assinaturaVersao() {
   try {
-    const txt = (await Promise.all(["app.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    const txt = (await Promise.all(["app.js", "docs.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
     let x = 0;
     for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
     return x + ":" + txt.length;

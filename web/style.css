@@ -123,3 +123,20 @@ button .ic{margin-right:0}
 @media (prefers-color-scheme:dark){.rast{color:#6ee7b7}.rast.velho{color:var(--mut)}}
 .novaVersao{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:60;display:flex;align-items:center;gap:8px;max-width:calc(100vw - 32px);padding:10px 14px;border-radius:12px;background:#0f172a;color:#fff;box-shadow:0 6px 24px #0006;font-size:14px}
 .novaVersao button{white-space:nowrap}
+.mandar-lin{margin-top:6px}
+.mandar{display:inline-flex;align-items:center;gap:5px;font-size:12px;padding:3px 10px;border-radius:999px;border-color:#86c8a0;background:#effaf3;color:#0f5c3a}
+.mandar:hover{box-shadow:0 0 0 2px #4ade80}
+@media (prefers-color-scheme:dark){.mandar{background:#12301f;border-color:#2f7a52;color:#86efac}}
+.wa-grupo{margin:10px 0;padding:8px 10px;border:1px solid var(--bd);border-radius:10px}
+.wa-tit{font-weight:600;font-size:13px;margin-bottom:4px}
+.wa-item{display:flex;align-items:center;gap:8px;margin:4px 0;font-size:13px;color:var(--tx);cursor:pointer}
+.wa-item input{width:auto;margin:0}
+.wa-item.falta{color:var(--mut);cursor:default}
+.wa-previa{white-space:pre-wrap;word-break:break-word;background:var(--bg);border:1px solid var(--bd);border-radius:8px;padding:8px 10px;font:12.5px/1.4 system-ui,sans-serif;max-height:220px;overflow:auto;margin:0}
+.doc-rolagem{overflow:auto;max-height:55vh;border:1px solid var(--bd);border-radius:8px}
+.doc-t{font-size:12.5px}
+.doc-t th{position:sticky;top:0;background:var(--card);font-size:12px;color:var(--mut)}
+.doc-t tr.off{opacity:.55}
+.doc-t select,.doc-t input[type=text],.doc-t input[type=date]{width:auto;padding:3px 6px}
+details{margin:4px 0;border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
+details summary{cursor:pointer}
