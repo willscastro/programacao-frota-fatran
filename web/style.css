@@ -227,6 +227,8 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-no.sel .hub-ic{background:var(--az);color:var(--gf)}
 .hub-rot{display:block;margin-top:10px;font-size:13px;font-weight:700;line-height:1.25;color:var(--gf)}
 .hub-tag{display:inline-block;margin-top:5px;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;border:1px solid #9FD6F0;color:var(--az2);background:#fff}
+.hub-no.rot-cima .hub-txt{position:absolute;bottom:100%;left:-10px;right:-10px;margin-bottom:8px}
+.hub-no.rot-cima .hub-rot{margin-top:0}
 .hub-no.breve .hub-ic{border-style:dashed;color:#5d8aa5;background:#F3F8FB}
 .hub-legenda{position:relative;margin-top:10px;width:100%;max-width:560px;min-height:116px;padding:0 24px}
 .hub-cartao{border:2px solid var(--bd2);border-radius:20px;background:#fff;padding:16px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;animation:hubentra .35s ease both}
@@ -253,6 +255,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
   .hub-ic{width:48px;height:48px;margin:0;flex:0 0 auto;box-shadow:none}.hub-ic .ic{width:24px;height:24px}
   .hub-no:hover .hub-ic{transform:none;box-shadow:none}
   .hub-rot{margin:0}.hub-tag{margin-top:3px}
+  .hub-no.rot-cima .hub-txt{position:static;margin:0}
 }
 @media (prefers-reduced-motion:reduce){.hub-anel{animation:none}.hub-no,.hub-fio,.hub-orbita,.hub-centro,.hub-grade,.hub-cartao{transition-duration:.01s!important;transition-delay:0s!important;animation-duration:.01s!important}}
 
