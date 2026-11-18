@@ -434,7 +434,7 @@ function desenharEstrutura() {
   const botoes = [];
   if (can("cadastro.editar")) botoes.push(h("button", { onclick: modalCadastro }, "Cadastro"));
   if (can("programacao.editar")) botoes.push(h("button", { onclick: modalDocumentos }, [ic("anexo"), " Documentos"]));
-  if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalWhatsApp }, [ic("enviar"), " WhatsApp"]));
+  if (ENVIO_AUTOMATICO && can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalWhatsApp }, [ic("enviar"), " WhatsApp"]));
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
   if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalUsuarios }, "Usuários"));
   botoes.push(h("button", { onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"));

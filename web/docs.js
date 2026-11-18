@@ -3,6 +3,8 @@
 // Os arquivos ficam num bucket PRIVADO do Supabase ("prog-docs"); o que sai para o WhatsApp são links
 // assinados com validade de 7 dias, ou os próprios arquivos quando o aparelho permite compartilhar.
 
+// Envio automático (número conectado por QR): desligado por ora. Mude para true para reativar a seção e o botão "WhatsApp".
+const ENVIO_AUTOMATICO = false;
 const BUCKET_DOCS = "prog-docs";
 const TIPOS_DOC = {
   CRLV: "CRLV", CNH: "CNH", MOPP: "MOPP", INDIVISIVEL: "Carga indivisível", NR35: "NR-35",
@@ -226,14 +228,14 @@ async function abrirEnvio(r) {
     h("label", {}, "Número do WhatsApp de quem vai receber"), inpNum, lista,
     h("label", {}, "Observação"), inpObs,
     h("label", {}, "Mensagem"), previa,
-    secaoAuto,
-    h("p", { class: "hint", style: "margin:12px 0 0" }, "Ou envie pelo seu próprio WhatsApp:"),
+    ENVIO_AUTOMATICO ? secaoAuto : null,
+    ENVIO_AUTOMATICO ? h("p", { class: "hint", style: "margin:12px 0 0" }, "Ou envie pelo seu próprio WhatsApp:") : null,
     h("div", { class: "row", style: "margin-top:6px;gap:8px;flex-wrap:wrap" },
       h("button", { onclick: abrirWhats }, ic("enviar"), " Abrir no WhatsApp"),
       navigator.share ? h("button", { onclick: compartilhar, title: "Compartilha os arquivos de verdade (melhor no celular)" }, ic("anexo"), " Compartilhar com anexos") : null,
       h("button", { onclick: copiar }, ic("copiar"), " Copiar mensagem")),
     h("p", { class: "hint", style: "margin-top:8px" }, "Em \"Abrir no WhatsApp\", a mensagem abre pronta e quem envia é você, pelo seu aparelho (links dos documentos valem 7 dias).")].filter(Boolean));
-  montarAuto();
+  if (ENVIO_AUTOMATICO) montarAuto();
 }
 
 // ---------- classificação dos arquivos de uma pasta ----------
