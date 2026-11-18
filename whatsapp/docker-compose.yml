@@ -1,0 +1,65 @@
+# Servidor do WhatsApp (Evolution API v2) para o envio automático do sistema de programação.
+# Sobe 4 contêineres: a API, o banco (PostgreSQL), o cache (Redis) e o Caddy, que cuida do HTTPS sozinho.
+# Passo a passo no LEIA-ME.md. Copie .env.example para .env e preencha ANTES de subir.
+
+services:
+  evolution-api:
+    container_name: evolution_api
+    image: ${EVOLUTION_IMAGE:-evoapicloud/evolution-api:latest}
+    restart: always
+    depends_on: [postgres, redis]
+    environment:
+      SERVER_URL: https://${DOMINIO}
+      AUTHENTICATION_API_KEY: ${EVOLUTION_APIKEY}
+      DEL_INSTANCE: "false"
+      DATABASE_ENABLED: "true"
+      DATABASE_PROVIDER: postgresql
+      DATABASE_CONNECTION_URI: postgresql://evolution:${POSTGRES_SENHA}@postgres:5432/evolution?schema=evolution_api
+      DATABASE_CONNECTION_CLIENT_NAME: fatran_zap
+      DATABASE_SAVE_DATA_INSTANCE: "true"
+      DATABASE_SAVE_DATA_CONTACTS: "true"
+      DATABASE_SAVE_DATA_CHATS: "true"
+      DATABASE_SAVE_DATA_NEW_MESSAGE: "false"
+      DATABASE_SAVE_MESSAGE_UPDATE: "false"
+      DATABASE_SAVE_DATA_HISTORIC: "false"
+      CACHE_REDIS_ENABLED: "true"
+      CACHE_REDIS_URI: redis://redis:6379/1
+      CACHE_REDIS_PREFIX_KEY: fatran_zap
+      CACHE_REDIS_SAVE_INSTANCES: "false"
+      CACHE_LOCAL_ENABLED: "false"
+    volumes:
+      - evolution_instances:/evolution/instances
+    # só o Caddy (HTTPS) enxerga a API; ela não fica aberta direto na internet
+    expose: ["8080"]
+
+  postgres:
+    image: postgres:16-alpine
+    restart: always
+    environment:
+      POSTGRES_USER: evolution
+      POSTGRES_PASSWORD: ${POSTGRES_SENHA}
+      POSTGRES_DB: evolution
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    restart: always
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis_data:/data
+
+  caddy:
+    image: caddy:2
+    restart: always
+    depends_on: [evolution-api]
+    ports: ["80:80", "443:443"]
+    command: caddy reverse-proxy --from ${DOMINIO} --to evolution-api:8080
+    volumes:
+      - caddy_data:/data
+
+volumes:
+  evolution_instances:
+  postgres_data:
+  redis_data:
+  caddy_data:

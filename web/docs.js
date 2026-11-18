@@ -28,6 +28,17 @@ async function recarregarDocs() {
   S.docs = data || [];
 }
 
+// ---------- envio automático (servidor do WhatsApp conectado por QR) ----------
+async function chamarWa(corpo) {
+  const { data, error } = await sb.functions.invoke("whatsapp", { body: corpo });
+  if (error) {
+    let msg = error.message || "Falha ao falar com o servidor.";
+    try { const j = await error.context.json(); if (j && j.erro) msg = j.erro; } catch (e) { /* sem corpo */ }
+    return { erro: msg };
+  }
+  return data || {};
+}
+
 // ---------- botão "Mandar dados" ----------
 function botaoMandar(r) {
   return h("div", { class: "mandar-lin", onclick: (e) => e.stopPropagation() },
@@ -141,6 +152,59 @@ async function abrirEnvio(r) {
     }
   };
 
+  // Envio automático: só aparece como ativo quando o WhatsApp do servidor está conectado
+  const secaoAuto = h("div", { class: "wa-auto" }, h("p", { class: "hint" }, "Verificando o WhatsApp conectado…"));
+  const resultadoAuto = h("div", { class: "wa-resultado" });
+  let nomeEscolhido = "";
+  async function enviarAgora(btn) {
+    const n = destinoValido(); if (!n) return;
+    const m = marcados();
+    if (!confirm("Enviar agora para " + (nomeEscolhido ? nomeEscolhido + " (" + fmtWhats(n) + ")" : fmtWhats(n)) + "?\n\nA mensagem" + (m.length ? " e " + m.length + " documento(s)" : "") + " saem automaticamente e não dá para desfazer.")) return;
+    btn.disabled = true; resultadoAuto.replaceChildren(h("p", { class: "hint" }, "Enviando… pode levar alguns segundos."));
+    const res = await chamarWa({ acao: "enviar", conjunto_id: r.conjunto_id, motorista_id: mot, numero: n, texto: montarTexto(false),
+      itens: m.map((i) => ({ id: i.doc.id, rotulo: i.rotulo })) });
+    btn.disabled = false;
+    if (res.erro || !res.ok) { resultadoAuto.replaceChildren(h("div", { class: "err" }, res.erro || "Não foi possível enviar.")); return; }
+    lembrarWhats(n);
+    const falhas = (res.itens || []).filter((x) => !x.ok);
+    resultadoAuto.replaceChildren(...[
+      h("div", { class: "wa-ok" }, ic("enviar"), " Mensagem enviada" + ((res.itens || []).length ? " · documentos: " + ((res.itens || []).length - falhas.length) + " de " + res.itens.length : "") + "."),
+      res.ignorados ? h("p", { class: "hint" }, res.ignorados + " item(ns) não pertencem a este conjunto e foram ignorados.") : null,
+      ...falhas.map((f) => h("div", { class: "err" }, f.item + ": " + (f.erro || "falhou")))].filter(Boolean));
+    toast(falhas.length ? "Enviado, mas alguns documentos falharam." : "Enviado.");
+  }
+  async function montarAuto() {
+    const st = await chamarWa({ acao: "status" });
+    if (st.erro) { secaoAuto.replaceChildren(h("p", { class: "hint" }, "Envio automático indisponível: " + st.erro)); return; }
+    if (!st.conectado) {
+      const motivo = !st.configurado ? "o servidor do WhatsApp ainda não foi configurado" : st.estado === "servidor_com_erro" ? "o servidor do WhatsApp não respondeu" : "nenhum número está conectado";
+      secaoAuto.replaceChildren(h("div", { class: "parado-box" }, ic("alerta"), " Envio automático indisponível: " + motivo + ". ",
+        can("usuarios.gerenciar") ? h("button", { type: "button", onclick: () => { mo.fechar(); modalWhatsApp(); } }, "Conectar WhatsApp") : "Peça ao administrador para conectar."));
+      return;
+    }
+    const busca = h("input", { type: "search", placeholder: "Buscar contato do WhatsApp conectado (nome ou número)", autocomplete: "off" });
+    const lista = h("div", { class: "wa-contatos" });
+    let t = null, seq = 0;
+    const carregarContatos = async () => {
+      const meu = ++seq;
+      const res = await chamarWa({ acao: "contatos", busca: busca.value });
+      if (meu !== seq) return;
+      if (res.erro) { lista.replaceChildren(h("p", { class: "hint" }, res.erro)); return; }
+      const cs = res.contatos || [];
+      lista.replaceChildren(...(cs.length ? cs.map((c) => h("button", { type: "button", class: "wa-contato", onclick: () => {
+        inpNum.value = c.numero; nomeEscolhido = c.nome; busca.value = c.nome; lista.replaceChildren(); } }, h("b", {}, c.nome), " ", h("span", { class: "hint" }, fmtWhats(c.numero))))
+        : [h("p", { class: "hint" }, "Nenhum contato encontrado. Você pode digitar o número acima.")]));
+    };
+    busca.addEventListener("focus", () => { if (!lista.children.length) carregarContatos(); });
+    busca.addEventListener("input", () => { nomeEscolhido = ""; clearTimeout(t); t = setTimeout(carregarContatos, 300); });
+    inpNum.addEventListener("input", () => { nomeEscolhido = ""; });
+    const btn = h("button", { type: "button", class: "pri enviar-ja", onclick: (e) => enviarAgora(e.currentTarget) }, ic("enviar"), " Enviar agora (automático)");
+    secaoAuto.replaceChildren(
+      h("div", { class: "wa-conectado" }, h("span", { class: "dot-ok" }), " WhatsApp conectado"),
+      h("label", {}, "Escolher contato"), busca, lista, h("p", { class: "hint", style: "margin:8px 0 0" }, "No envio automático os documentos marcados vão anexados (arquivos), no lugar dos links da prévia."),
+      h("div", { class: "row", style: "margin-top:10px" }, btn), resultadoAuto);
+  }
+
   const grupoUI = (grupo) => {
     const mine = itens.filter((i) => i.grupo === grupo), falta = faltando.filter((f) => f.grupo === grupo);
     if (!mine.length && !falta.length) return null;
@@ -162,11 +226,14 @@ async function abrirEnvio(r) {
     h("label", {}, "Número do WhatsApp de quem vai receber"), inpNum, lista,
     h("label", {}, "Observação"), inpObs,
     h("label", {}, "Mensagem"), previa,
-    h("div", { class: "row", style: "margin-top:12px;gap:8px;flex-wrap:wrap" },
-      h("button", { class: "pri", onclick: abrirWhats }, ic("enviar"), " Abrir no WhatsApp"),
+    secaoAuto,
+    h("p", { class: "hint", style: "margin:12px 0 0" }, "Ou envie pelo seu próprio WhatsApp:"),
+    h("div", { class: "row", style: "margin-top:6px;gap:8px;flex-wrap:wrap" },
+      h("button", { onclick: abrirWhats }, ic("enviar"), " Abrir no WhatsApp"),
       navigator.share ? h("button", { onclick: compartilhar, title: "Compartilha os arquivos de verdade (melhor no celular)" }, ic("anexo"), " Compartilhar com anexos") : null,
       h("button", { onclick: copiar }, ic("copiar"), " Copiar mensagem")),
-    h("p", { class: "hint", style: "margin-top:8px" }, "O WhatsApp abre com a mensagem pronta; quem envia é você, pelo seu aparelho. Os links dos documentos expiram em 7 dias.")].filter(Boolean));
+    h("p", { class: "hint", style: "margin-top:8px" }, "Em \"Abrir no WhatsApp\", a mensagem abre pronta e quem envia é você, pelo seu aparelho (links dos documentos valem 7 dias).")].filter(Boolean));
+  montarAuto();
 }
 
 // ---------- classificação dos arquivos de uma pasta ----------
@@ -434,4 +501,84 @@ async function modalDocumentos() {
       desenharLista());
   }
   await recarregarDocs(); desenhar();
+}
+
+// ---------- tela WhatsApp (administrador): conectar o número por QR ----------
+function carregarScript(src) {
+  return new Promise((ok, falha) => {
+    if (document.querySelector('script[src="' + src + '"]')) { ok(); return; }
+    const sc = document.createElement("script"); sc.src = src; sc.onload = () => ok(); sc.onerror = () => falha(new Error("script"));
+    document.head.append(sc);
+  });
+}
+async function imagemQr(res) {
+  if (res.qr) return res.qr;
+  if (res.codigo) {
+    await carregarScript("https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js");
+    return window.QRCode.toDataURL(res.codigo, { margin: 1, width: 260 });
+  }
+  return null;
+}
+async function modalWhatsApp() {
+  const corpo = h("div", {}, h("p", { class: "hint" }, "Verificando…"));
+  const mo = modal("WhatsApp do sistema", corpo);
+  const aberto = () => document.body.contains(corpo);
+  const inpNum = h("input", { type: "tel", placeholder: "Opcional: número do WhatsApp para conectar por código (sem QR)", autocomplete: "off" });
+  let ultimoQr = 0, gerando = false;
+
+  async function gerar() {
+    if (gerando) return; gerando = true;
+    try {
+      const res = await chamarWa({ acao: "conectar", numero: inpNum.value });
+      if (!aberto()) return;
+      if (res.erro) { desenhar({ erro: res.erro }); return; }
+      if (res.conectado) { desenhar({ conectado: true }); return; }
+      const img = await imagemQr(res).catch(() => null);
+      ultimoQr = Date.now();
+      desenhar({ qr: img, pairingCode: res.pairingCode });
+    } finally { gerando = false; }
+  }
+  async function desconectar() {
+    if (!confirm("Desconectar o WhatsApp do sistema? O envio automático para até ser conectado de novo.")) return;
+    const res = await chamarWa({ acao: "desconectar" });
+    if (res.erro) { toast(res.erro); return; }
+    toast("WhatsApp desconectado."); verificar();
+  }
+  function desenhar(st) {
+    const filhos = [];
+    if (st.erro) filhos.push(h("div", { class: "err" }, st.erro));
+    if (st.naoConfigurado) filhos.push(h("div", { class: "parado-box" }, ic("alerta"), " O servidor do WhatsApp ainda não foi configurado. Siga o guia whatsapp/LEIA-ME.md no repositório e cadastre os segredos EVOLUTION_URL e EVOLUTION_APIKEY na função \"whatsapp\" do Supabase."));
+    else if (st.conectado) filhos.push(
+      h("div", { class: "wa-conectado" }, h("span", { class: "dot-ok" }), " WhatsApp conectado. O envio automático está ativo."),
+      h("p", { class: "hint" }, "Use um número exclusivo da empresa para isso, nunca o seu pessoal."),
+      h("div", { class: "row", style: "margin-top:10px;gap:8px" }, h("button", { class: "danger", onclick: desconectar }, "Desconectar")));
+    else {
+      if (st.qr) filhos.push(h("img", { src: st.qr, alt: "QR Code para conectar o WhatsApp", class: "wa-qr", width: 260, height: 260 }));
+      if (st.pairingCode) filhos.push(h("p", {}, "Código de pareamento: ", h("b", { style: "font-size:20px;letter-spacing:2px" }, st.pairingCode)));
+      filhos.push(
+        h("p", { class: "hint" }, "No celular do número que vai enviar: WhatsApp > Aparelhos conectados > Conectar um aparelho" + (st.pairingCode ? " > Conectar com número de telefone, e digite o código." : " e leia o QR. O QR renova sozinho a cada 30 segundos.")),
+        h("label", {}, "Conectar por código em vez de QR"), inpNum,
+        h("div", { class: "row", style: "margin-top:10px;gap:8px" }, h("button", { class: "pri", onclick: gerar }, st.qr || st.pairingCode ? "Gerar outro" : "Gerar QR")));
+    }
+    corpo.replaceChildren(...filhos);
+  }
+  let primeira = true;
+  async function verificar() {
+    const st = await chamarWa({ acao: "status" });
+    if (!aberto()) return;
+    if (st.erro) { desenhar({ erro: st.erro }); return; }
+    if (!st.configurado) { desenhar({ naoConfigurado: true }); return; }
+    if (st.conectado) { desenhar({ conectado: true }); return; }
+    if (primeira) { primeira = false; gerar(); }
+  }
+  await verificar();
+  // enquanto a tela estiver aberta: confere a conexão a cada 4 s e renova o QR a cada 30 s
+  const timer = setInterval(async () => {
+    if (!aberto()) { clearInterval(timer); return; }
+    if (gerando) return;
+    const st = await chamarWa({ acao: "status" });
+    if (!aberto()) return;
+    if (st.conectado) { desenhar({ conectado: true }); return; }
+    if (st.configurado && Date.now() - ultimoQr > 30000 && !corpo.querySelector("input:focus")) gerar();
+  }, 4000);
 }
