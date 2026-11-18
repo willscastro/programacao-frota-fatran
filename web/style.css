@@ -152,7 +152,7 @@ details summary{cursor:pointer}
 button.enviar-ja{background:#16a34a;border-color:#16a34a;color:#fff}
 
 /* ---- celular ---- */
-header.top .menu-btn{display:none}
+header.top .menu-btn,header.top .cal-btn{display:none}
 header.top .filtros,header.top .ferramentas{display:contents}
 @media (max-width:720px){
   body{font-size:15px}
@@ -163,7 +163,9 @@ header.top .filtros,header.top .ferramentas{display:contents}
   header.top.aberto .menu-btn{background:var(--pri);border-color:var(--pri);color:#fff}
   header.top .diaNav{width:100%;justify-content:space-between;flex-wrap:nowrap}
   header.top .diaNav b{flex:1;text-align:center;font-size:13px}
-  header.top .diaNav input[type=date]{display:none}
+  header.top .diaNav input[type=date]{position:absolute;opacity:0;pointer-events:none;width:1px;min-height:0;height:1px}
+  header.top .diaNav{position:relative}
+  header.top .cal-btn{display:inline-flex;align-items:center;justify-content:center}
   header.top .diaNav .passado{display:none}
   header.top .sync{flex:1 1 100%;text-align:center;white-space:normal}
   header.top .filtros{display:flex;gap:8px;width:100%;flex-wrap:wrap}

@@ -44,6 +44,7 @@ const ICONES = {
   olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
   olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   enviar: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
   anexo: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
@@ -438,6 +439,7 @@ function desenharEstrutura() {
   if (ENVIO_AUTOMATICO && can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalWhatsApp }, [ic("enviar"), " WhatsApp"]));
   if (can("colunas.gerenciar")) botoes.push(h("button", { onclick: modalColunas }, "Colunas"));
   if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalUsuarios }, "Usuários"));
+  if (can("usuarios.gerenciar")) botoes.push(h("button", { onclick: modalHistorico, title: "Traz os dias antigos da planilha para o sistema" }, [ic("pasta"), " Importar histórico"]));
   botoes.push(h("button", { onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"));
   const d = new Date(S.dia + "T12:00:00");
   $resumo = h("div", { class: "resumo" });
@@ -450,6 +452,7 @@ function desenharEstrutura() {
         h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, ic("esq")),
         h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
         h("button", { title: "Próximo dia", disabled: !vizinho(1), onclick: () => irParaDia(vizinho(1)) }, ic("dir")),
+        h("button", { class: "cal-btn", title: "Escolher uma data", "aria-label": "Escolher uma data", onclick: (e) => { const i = e.currentTarget.parentNode.querySelector("input[type=date]"); if (i.showPicker) i.showPicker(); else i.focus(); } }, ic("calendario")),
         h("input", { type: "date", value: S.dia, min: (S.diasLista || []).slice().sort()[0], max: S.hoje, title: "Ir para um dia", onchange: (e) => { const v = e.target.value; if ((S.diasLista || []).includes(v)) irParaDia(v); else if (v) toast("Não há registro desse dia."); } }),
         S.dia !== S.hoje ? h("button", { class: "on", onclick: () => irParaDia(S.hoje) }, "Voltar para hoje") : null,
         S.dia !== S.hoje ? h("span", { class: "passado" }, [ic("pasta"), " Dia anterior · consulta"]) : null),
@@ -1176,7 +1179,7 @@ async function abrirMapa() {
 // e recarrega a página quando a pessoa não estiver editando nada.
 async function assinaturaVersao() {
   try {
-    const txt = (await Promise.all(["app.js", "docs.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    const txt = (await Promise.all(["app.js", "docs.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
     let x = 0;
     for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
     return x + ":" + txt.length;
