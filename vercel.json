@@ -22,5 +22,11 @@
         }
       ]
     }
+  ],
+  "rewrites": [
+    {
+      "source": "/d/:codigo",
+      "destination": "https://rmlbnqnnanrkvoeqntim.supabase.co/functions/v1/d?c=:codigo"
+    }
   ]
 }

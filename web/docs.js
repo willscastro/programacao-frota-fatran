@@ -1,7 +1,7 @@
 // Documentos de motoristas e veículos + botão "Mandar dados" (envio por WhatsApp).
 // Depende das funções globais de app.js (h, ic, modal, toast, S, sb, can, traduzErro, dataBR, carregar).
 // Os arquivos ficam num bucket PRIVADO do Supabase ("prog-docs"); o que sai para o WhatsApp são links
-// assinados com validade de 7 dias, ou os próprios arquivos quando o aparelho permite compartilhar.
+// curtos (/d/código) com validade de 1, 4 ou 24 horas, ou os próprios arquivos quando o aparelho permite compartilhar.
 
 // Envio automático (número conectado por QR): desligado por ora. Mude para true para reativar a seção e o botão "WhatsApp".
 const ENVIO_AUTOMATICO = false;
@@ -80,7 +80,7 @@ async function abrirEnvio(r) {
   const urls = new Map();
   if (itens.length) {
     const caminhos = [...new Set(itens.map((i) => i.doc.arquivo))];
-    const { data, error } = await sb.storage.from(BUCKET_DOCS).createSignedUrls(caminhos, 7 * 86400);
+    const { data, error } = await sb.storage.from(BUCKET_DOCS).createSignedUrls(caminhos, 1800);
     if (error) { corpo.replaceChildren(h("div", { class: "err" }, traduzErro(error))); return; }
     (data || []).forEach((x) => { if (x.signedUrl) urls.set(x.path, x.signedUrl); });
   }
@@ -90,6 +90,32 @@ async function abrirEnvio(r) {
   const lista = h("datalist", { id: "wa-recentes" }, recentesWhats().map((n) => h("option", { value: n }, fmtWhats(n))));
   const previa = h("pre", { class: "wa-previa" });
   const marcados = () => itens.filter((i) => sel.has(i.id));
+  // links curtos e temporários: o código nasce aqui (na hora do envio) e o registro vai ao banco logo em seguida
+  const selValidade = h("select", { onchange: () => atualizar() },
+    [[1, "1 hora"], [4, "4 horas"], [24, "24 horas"]].map(([v, t]) => h("option", { value: v }, t)));
+  const horas = () => Number(selValidade.value) || 1;
+  const rotuloValidade = () => (horas() === 1 ? "1 hora" : horas() + " horas");
+  const curtos = new Map(); // arquivo -> link curto do envio em andamento
+  function gerarLinks() {
+    const alfa = "abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+    const expira = new Date(Date.now() + horas() * 3600000).toISOString();
+    const linhas = [];
+    curtos.clear();
+    marcados().forEach((i) => {
+      if (curtos.has(i.doc.arquivo)) return;
+      const b = crypto.getRandomValues(new Uint8Array(8));
+      const codigo = Array.from(b, (x) => alfa[x % alfa.length]).join("");
+      curtos.set(i.doc.arquivo, location.origin + "/d/" + codigo);
+      linhas.push({ codigo, arquivo: i.doc.arquivo, expira_em: expira });
+    });
+    return linhas;
+  }
+  async function salvarLinks(linhas) {
+    if (!linhas.length) return true;
+    const { error } = await sb.from("prog_links").insert(linhas);
+    if (error) { toast("Não consegui criar os links dos documentos: " + traduzErro(error)); return false; }
+    return true;
+  }
 
   function montarTexto(comLinks) {
     const L = ["*Fatran Transportes*"];
@@ -99,9 +125,9 @@ async function abrirEnvio(r) {
     if (inpObs.value.trim()) L.push("", inpObs.value.trim());
     const m = marcados();
     if (m.length) {
-      L.push("", comLinks ? "Documentos (links válidos por 7 dias):" : "Documentos em anexo:");
+      L.push("", comLinks ? "Documentos (links válidos por " + rotuloValidade() + "):" : "Documentos em anexo:");
       m.forEach((i) => {
-        if (comLinks) L.push("", i.rotulo + ":", urls.get(i.doc.arquivo) || "(link indisponível)");
+        if (comLinks) L.push("", i.rotulo + ":", curtos.get(i.doc.arquivo) || "https://link/…");
         else L.push("- " + i.rotulo);
       });
     }
@@ -120,12 +146,18 @@ async function abrirEnvio(r) {
   const abrirWhats = async () => {
     const n = destinoValido(); if (!n) return;
     lembrarWhats(n);
+    const linhas = gerarLinks();
     window.open("https://wa.me/" + n + "?text=" + encodeURIComponent(montarTexto(true)), "_blank");
+    await salvarLinks(linhas);
     await registrar(n, "whatsapp-link");
     toast("WhatsApp aberto. Confirme o envio por lá.");
   };
   const copiar = async () => {
-    try { await navigator.clipboard.writeText(montarTexto(true)); toast("Mensagem copiada."); }
+    try {
+      const linhas = gerarLinks();
+      await navigator.clipboard.writeText(montarTexto(true));
+      if (await salvarLinks(linhas)) toast("Mensagem copiada. Os links valem " + rotuloValidade() + ".");
+    }
     catch (e) { toast("Não consegui copiar neste navegador."); }
   };
   const compartilhar = async () => {
@@ -227,6 +259,7 @@ async function abrirEnvio(r) {
     semMotorista, grupoUI("Motorista"), grupoUI("Caminhão"), grupoUI("Empresa"),
     h("label", {}, "Número do WhatsApp de quem vai receber"), inpNum, lista,
     h("label", {}, "Observação"), inpObs,
+    h("label", {}, "Validade dos links dos documentos"), selValidade,
     h("label", {}, "Mensagem"), previa,
     ENVIO_AUTOMATICO ? secaoAuto : null,
     ENVIO_AUTOMATICO ? h("p", { class: "hint", style: "margin:12px 0 0" }, "Ou envie pelo seu próprio WhatsApp:") : null,
@@ -234,7 +267,7 @@ async function abrirEnvio(r) {
       h("button", { onclick: abrirWhats }, ic("enviar"), " Abrir no WhatsApp"),
       navigator.share ? h("button", { onclick: compartilhar, title: "Compartilha os arquivos de verdade (melhor no celular)" }, ic("anexo"), " Compartilhar com anexos") : null,
       h("button", { onclick: copiar }, ic("copiar"), " Copiar mensagem")),
-    h("p", { class: "hint", style: "margin-top:8px" }, "Em \"Abrir no WhatsApp\", a mensagem abre pronta e quem envia é você, pelo seu aparelho (links dos documentos valem 7 dias).")].filter(Boolean));
+    h("p", { class: "hint", style: "margin-top:8px" }, "Em \"Abrir no WhatsApp\", a mensagem abre pronta e quem envia é você, pelo seu aparelho (os links dos documentos expiram no prazo escolhido).")].filter(Boolean));
   if (ENVIO_AUTOMATICO) montarAuto();
 }
 
