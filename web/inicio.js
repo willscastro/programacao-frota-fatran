@@ -20,6 +20,12 @@ const ICONES_INICIO = {
 
 let inicioSel = null;
 
+// Rodapé das telas de módulos: empresa, site e crédito de desenvolvimento
+function rodapeFatran() {
+  return h("div", { class: "hub-rodape" }, h("span", {}, "Fatran Transportes"), h("span", {}, "fatranlog.com.br"),
+    h("span", { class: "hub-credito" }, "Desenvolvido por Whitney S Castro - Janus LTDA"));
+}
+
 function mostrarInicio() {
   Object.assign(ICONES, ICONES_INICIO);
   S.tela = "inicio"; inicioSel = null;
@@ -75,7 +81,7 @@ function mostrarInicio() {
       h("div", { class: "hub-quem" }, h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     dica, palco, legenda,
-    h("div", { class: "hub-rodape" }, h("span", {}, "Fatran Transportes"), h("span", {}, "fatranlog.com.br")));
+    rodapeFatran());
   $app.replaceChildren(pag);
   layout();
   requestAnimationFrame(() => requestAnimationFrame(() => pag.classList.add("pronto"))); // só anima depois da 1ª posição calculada

@@ -239,7 +239,9 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-abrir[disabled]{background:#E3EEF4!important;color:#5d7385!important}
 @keyframes hubentra{0%{opacity:0;transform:translateY(8px)}100%{opacity:1;transform:none}}
 .hub-rodape{position:relative;margin-top:auto;width:100%;background:var(--gf);border-top:8px solid var(--az);padding:20px 40px;display:flex;justify-content:space-between;font-size:14px;color:#fff;font-weight:600}
-.hub-rodape span:last-child{color:#9FD6F0;font-weight:500}
+.hub-rodape{flex-wrap:wrap;row-gap:6px}
+.hub-rodape span:nth-child(2){color:#9FD6F0;font-weight:500}
+.hub-credito{flex:0 0 100%;font-size:12px;font-weight:500;color:#9db3c7;border-top:1px solid #ffffff1f;padding-top:8px;text-align:center}
 .btn-inicio{font-weight:600}
 @media (max-width:880px){
   .hub-topo{padding:12px 16px}.hub-topo img{height:34px}.hub-rodape{padding:16px;flex-direction:column;gap:4px}

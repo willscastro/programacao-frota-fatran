@@ -12,7 +12,7 @@ async function telaIndicadores() {
       h("div", { class: "ed-titulo" }, h("span", { class: "ed-sel" }, ic("m_painel")),
         h("div", {}, h("h1", {}, "Indicadores"), h("p", {}, "Situação da frota hoje, esperas, manutenção e cargas por período."))),
       host),
-    h("div", { class: "hub-rodape" }, h("span", {}, "Fatran Transportes"), h("span", {}, "fatranlog.com.br"))));
+    rodapeFatran()));
   const [st, rows, cfg] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),

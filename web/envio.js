@@ -20,7 +20,7 @@ async function telaEnvioDocs() {
         h("div", {}, h("h1", {}, "Envio de documentos"), h("p", {}, "Escolha o veículo e mande os dados do motorista, do caminhão e os documentos por WhatsApp."))),
       h("div", { class: "ed-barra" }, h("label", { class: "ed-busca" }, ic("busca"), busca), contagem, atualizar, gerenciar),
       lista),
-    h("div", { class: "hub-rodape" }, h("span", {}, "Fatran Transportes"), h("span", {}, "fatranlog.com.br"))));
+    rodapeFatran()));
 
   function chip(ok, texto) { return h("span", { class: "ed-chip " + (ok ? "ok" : "falta"), title: ok ? "Cadastrado" : "Não cadastrado" }, ic(ok ? "ok" : "alerta"), " " + texto); }
   function cartao(r) {
