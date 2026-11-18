@@ -140,3 +140,4 @@ button .ic{margin-right:0}
 .doc-t select,.doc-t input[type=text],.doc-t input[type=date]{width:auto;padding:3px 6px}
 details{margin:4px 0;border:1px solid var(--bd);border-radius:8px;padding:6px 10px}
 details summary{cursor:pointer}
+.doc-t tr.semdono{background:#fecaca55;outline:1px solid #d14343}

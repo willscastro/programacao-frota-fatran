@@ -233,7 +233,7 @@ function classificarArquivo(file) {
 async function modalDocumentos() {
   const corpo = h("div");
   modal("Documentos de motoristas e veículos", corpo);
-  let previaImport = null;
+  let previaImport = null, arquivosPrevia = [];
 
   async function visualizar(d) {
     const w = window.open("", "_blank");
@@ -283,13 +283,17 @@ async function modalDocumentos() {
         linhas.push(l);
       }
     }
-    previaImport = linhas; desenhar();
+    previaImport = linhas; arquivosPrevia = arquivos; desenhar();
   }
 
   async function importar(linhas, barra) {
-    const marcadas = linhas.filter((l) => l.incluir && l.tipo);
-    const faltaDono = marcadas.find((l) => l.tipo !== "CRLV" && l.tipo !== "ANTT" && l.motoristaId == null);
-    if (faltaDono) { toast("Escolha o motorista de \"" + faltaDono.nome + "\" ou desmarque."); return; }
+    let marcadas = linhas.filter((l) => l.incluir && l.tipo);
+    const semDono = marcadas.filter((l) => precisaDono(l) && l.motoristaId == null);
+    if (semDono.length) {
+      if (!confirm(semDono.length + " arquivo(s) marcados estão sem motorista e NÃO serão importados (ficam destacados em vermelho na lista). Importar os demais?")) return;
+      marcadas = marcadas.filter((l) => !semDono.includes(l));
+    }
+    if (!marcadas.length) { toast("Nada para importar."); return; }
     // motoristas marcados como "+ cadastrar": cria uma vez por nome de pasta
     const novos = new Map();
     for (const l of marcadas) {
@@ -350,35 +354,45 @@ async function modalDocumentos() {
     toast("Comprovante ANTT atualizado."); await recarregarDocs(); desenhar();
   }
 
+  function redesenhar() {
+    const a = corpo.querySelector(".doc-rolagem"), y = a ? a.scrollTop : 0;
+    desenhar();
+    const b = corpo.querySelector(".doc-rolagem"); if (b) b.scrollTop = y;
+  }
+  const precisaDono = (l) => l.tipo && l.tipo !== "CRLV" && l.tipo !== "ANTT";
+
   function desenharPrevia() {
     const linhas = previaImport;
     const barra = h("span", { class: "hint" });
     const tabela = h("table", { class: "doc-t" },
       h("thead", {}, h("tr", {}, h("th", {}, ""), h("th", {}, "Arquivo"), h("th", {}, "Tipo"), h("th", {}, "Dono"), h("th", {}, "Validade"), h("th", {}, "Situação"))),
       h("tbody", {}, linhas.map((l) => {
-        const cx = h("input", { type: "checkbox", checked: l.incluir, onchange: (e) => { l.incluir = e.target.checked; } });
-        const selTipo = h("select", { onchange: (e) => { l.tipo = e.target.value; l.incluir = !!l.tipo; desenhar(); } },
+        const cx = h("input", { type: "checkbox", checked: l.incluir, onchange: (e) => { l.incluir = e.target.checked; redesenhar(); } });
+        const selTipo = h("select", { onchange: (e) => { l.tipo = e.target.value; l.incluir = !!l.tipo; redesenhar(); } },
           h("option", { value: "" }, "ignorar"), Object.entries(TIPOS_DOC).map(([k, v]) => h("option", { value: k }, v)));
         selTipo.value = l.tipo;
         let dono;
         if (l.tipo === "CRLV") dono = h("input", { type: "text", value: l.placa, maxlength: 8, style: "width:90px;text-transform:uppercase", oninput: (e) => { l.placa = nz(e.target.value); } });
         else if (l.tipo && l.tipo !== "ANTT") {
-          dono = h("select", { onchange: (e) => { const v = e.target.value; l.motoristaId = !v ? null : v === "novo" ? "novo" : Number(v); if (l.motoristaId != null && l.nota === "escolha o motorista") l.nota = ""; } },
+          dono = h("select", { onchange: (e) => { const v = e.target.value; l.motoristaId = !v ? null : v === "novo" ? "novo" : Number(v); if (l.motoristaId != null && l.nota === "escolha o motorista") l.nota = ""; if (l.motoristaId != null) l.incluir = true; redesenhar(); } },
             h("option", { value: "" }, "— escolher —"),
             l.motoristaNome && can("cadastro.editar") ? h("option", { value: "novo" }, "+ cadastrar " + nz(l.motoristaNome)) : null,
             (S.motoristas || []).map((m) => h("option", { value: String(m.id) }, m.nome)));
           dono.value = l.motoristaId != null ? String(l.motoristaId) : "";
         } else dono = h("span", { class: "hint" }, l.tipo === "ANTT" ? "empresa" : "");
         const val = l.tipo ? h("input", { type: "date", value: l.validade || "", onchange: (e) => { l.validade = e.target.value; } }) : null;
-        return h("tr", { class: l.incluir ? "" : "off" }, h("td", {}, l.tipo ? cx : null), h("td", { title: l.file.webkitRelativePath || l.nome, style: "max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, l.nome),
+        return h("tr", { class: !l.incluir ? "off" : precisaDono(l) && l.motoristaId == null ? "semdono" : "" }, h("td", {}, l.tipo ? cx : null), h("td", { title: l.file.webkitRelativePath || l.nome, style: "max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" }, l.nome),
           h("td", {}, selTipo), h("td", {}, dono), h("td", {}, val), h("td", { class: "hint" }, l.nota));
       })));
-    const inclui = linhas.filter((l) => l.incluir && l.tipo).length;
+    const inclui = linhas.filter((l) => l.incluir && l.tipo && !(precisaDono(l) && l.motoristaId == null)).length;
+    const pend = linhas.filter((l) => l.incluir && precisaDono(l) && l.motoristaId == null).length;
     return h("div", {},
       h("p", { class: "hint" }, linhas.length + " arquivo(s) lidos. Confira o tipo e o dono; só os marcados serão enviados."),
+      pend ? h("div", { class: "parado-box" }, ic("alerta"), " " + pend + " marcado(s) sem motorista (linhas em vermelho): escolha o motorista, ou eles ficam de fora.") : null,
       h("div", { class: "doc-rolagem" }, tabela),
       h("div", { class: "row", style: "margin-top:10px;gap:8px;flex-wrap:wrap" },
         h("button", { class: "pri", onclick: (e) => { e.target.disabled = true; importar(linhas, barra).finally(() => { e.target.disabled = false; }); } }, ic("upload"), " Importar " + inclui + " marcado(s)"),
+        h("button", { title: "Volta à sugestão automática, desfazendo mudanças de tipo, dono e marcação", onclick: () => prepararImportacao(arquivosPrevia) }, "Restaurar sugestão"),
         h("button", { onclick: () => { previaImport = null; desenhar(); } }, "Cancelar"), barra));
   }
 
