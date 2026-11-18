@@ -216,11 +216,11 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-orbita{position:absolute;left:50%;top:50%;border-radius:50%;border:1px dashed #9FD6F0;transform:translate(-50%,-50%) scale(.2);opacity:0;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .6s;pointer-events:none}
 .hub.aberto .hub-orbita{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* abre em ordem: a linha chega primeiro, depois o bloco; fecha em ordem: o bloco some, depois a linha recolhe */
-.hub-fio{position:absolute;left:50%;top:50%;height:2px;width:var(--len);margin-top:-1px;transform-origin:0 50%;transform:rotate(var(--ang)) scaleX(0);background:linear-gradient(90deg,transparent 0%,var(--az) 100%);opacity:.55;transition:transform .35s ease calc(var(--i)*70ms + 260ms);pointer-events:none}
+.hub-fio{position:absolute;left:50%;top:50%;height:2px;width:var(--len);margin-top:-1px;transform-origin:0 50%;transform:rotate(var(--ang)) scaleX(0);background:linear-gradient(90deg,transparent 0%,var(--az) 100%);opacity:.55;transition:transform .3s ease calc(var(--i)*60ms + 220ms);pointer-events:none}
 .hub.aberto .hub-fio{transform:rotate(var(--ang)) scaleX(1);transition:transform .4s ease calc(var(--i)*90ms)}
 .hub-grade{display:contents}
-.hub-no{position:absolute;left:50%;top:50%;width:124px;margin:-42px 0 0 -62px;padding:0;border:0!important;background:none!important;text-align:center;z-index:6;opacity:0;transform:translate(0,0) scale(.15);pointer-events:none;transition:transform .4s ease calc(var(--i)*70ms),opacity .3s ease calc(var(--i)*70ms)}
-.hub.aberto .hub-no{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto;transition:transform .75s cubic-bezier(.34,1.45,.5,1) calc(var(--i)*90ms + 340ms),opacity .4s ease calc(var(--i)*90ms + 340ms)}
+.hub-no{position:absolute;left:50%;top:50%;width:124px;margin:-42px 0 0 -62px;padding:0;border:0!important;background:none!important;text-align:center;z-index:6;opacity:0;transform:translate(var(--x),var(--y)) scale(.3);pointer-events:none;transition:transform .3s ease calc(var(--i)*60ms),opacity .25s ease calc(var(--i)*60ms)}
+.hub.aberto .hub-no{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto;transition:transform .5s cubic-bezier(.34,1.45,.5,1) calc(var(--i)*90ms + 340ms),opacity .3s ease calc(var(--i)*90ms + 340ms)}
 .hub-ic{width:84px;height:84px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:#fff;border:2px solid var(--bd2);color:var(--az2);box-shadow:0 10px 26px #12263A1f;transition:transform .25s,border-color .25s,box-shadow .25s,background .25s}
 .hub-ic .ic{width:34px;height:34px;stroke-width:1.7;margin:0}
 .hub-no:hover .hub-ic,.hub-no.sel .hub-ic{transform:translateY(-4px) scale(1.06);border-color:var(--az);box-shadow:0 14px 30px #12263A30,0 0 0 6px #1D9AD52b}
