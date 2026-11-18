@@ -43,6 +43,7 @@ const ICONES = {
   usuario: '<path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
   olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
+  menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
   enviar: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
   anexo: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
   upload: '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="m17 8-5-5-5 5"/><path d="M12 3v12"/>',
@@ -443,7 +444,8 @@ function desenharEstrutura() {
   $board = h("main", { class: "board" });
   $app.replaceChildren(
     h("header", { class: "top" },
-      h("div", { style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
+      h("div", { class: "titulo", style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
+      h("button", { class: "menu-btn", "aria-expanded": "false", onclick: (e) => { const hd = e.currentTarget.closest("header"); const a = hd.classList.toggle("aberto"); e.currentTarget.setAttribute("aria-expanded", String(a)); } }, ic("menu"), " Menu"),
       h("div", { class: "diaNav" },
         h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, ic("esq")),
         h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
@@ -451,10 +453,11 @@ function desenharEstrutura() {
         h("input", { type: "date", value: S.dia, min: (S.diasLista || []).slice().sort()[0], max: S.hoje, title: "Ir para um dia", onchange: (e) => { const v = e.target.value; if ((S.diasLista || []).includes(v)) irParaDia(v); else if (v) toast("Não há registro desse dia."); } }),
         S.dia !== S.hoje ? h("button", { class: "on", onclick: () => irParaDia(S.hoje) }, "Voltar para hoje") : null,
         S.dia !== S.hoje ? h("span", { class: "passado" }, [ic("pasta"), " Dia anterior · consulta"]) : null),
-      $sync, $btnSync,
-      $busca, tipo, $btnAlerta,
-      h("span", { class: "who" }, "Gaveta abre:"), h("span", { class: "seg" }, $lados.left, $lados.both, $lados.right),
-      compacto, $btnVazias, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes),
+      $sync,
+      h("div", { class: "filtros" }, $busca, tipo, $btnAlerta),
+      h("div", { class: "ferramentas" }, $btnSync,
+        h("span", { class: "who lado" }, "Gaveta abre:"), h("span", { class: "seg lado" }, $lados.left, $lados.both, $lados.right),
+        compacto, $btnVazias, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes)),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
