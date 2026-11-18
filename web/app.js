@@ -149,13 +149,12 @@ async function iniciar() {
   S.dia = hoje.data; S.hoje = hoje.data;
   const dl = await sb.from("prog_dias").select("dia").order("dia", { ascending: false }).limit(800);
   S.diasLista = (dl.data || []).map((x) => x.dia);
-  desenharEstrutura();
-  await carregar();
-  assinarTempoReal();
+  mostrarInicio(); // menu do ecossistema: o quadro só carrega quando um módulo é aberto
   vigiarVersao();
 }
 
 async function carregar() {
+  if (S.tela !== "quadro") return;
   const [st, rows, tp, mo, cfg, rv, rp, ma, dc] = await Promise.all([
     sb.from("prog_status").select("*").order("ordem"),
     sb.from("prog_programacao_v").select("*").eq("dia", S.dia).order("ordem").order("placa_cavalo"),
@@ -189,6 +188,7 @@ let $sync, $btnSync;
 const BOTAO_ATUALIZAR_PLANILHA = true;
 const horaBR = (ts) => new Date(ts).toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 async function carregarSync() {
+  if (S.tela !== "quadro") return;
   const { data } = await sb.from("prog_sync_status").select("*").eq("id", 1).maybeSingle();
   if (data) { S.sync = data; desenharSync(); fimAguardando(); }
 }
@@ -446,6 +446,7 @@ function desenharEstrutura() {
   $board = h("main", { class: "board" });
   $app.replaceChildren(
     h("header", { class: "top" },
+      h("button", { class: "btn-inicio", title: "Voltar ao menu inicial", onclick: voltarInicio }, ic("casa"), " Início"),
       h("div", { class: "titulo", style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
       h("button", { class: "menu-btn", "aria-expanded": "false", onclick: (e) => { const hd = e.currentTarget.closest("header"); const a = hd.classList.toggle("aberto"); e.currentTarget.setAttribute("aria-expanded", String(a)); } }, ic("menu"), " Menu"),
       h("div", { class: "diaNav" },
@@ -1179,7 +1180,7 @@ async function abrirMapa() {
 // e recarrega a página quando a pessoa não estiver editando nada.
 async function assinaturaVersao() {
   try {
-    const txt = (await Promise.all(["app.js", "docs.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    const txt = (await Promise.all(["app.js", "docs.js", "inicio.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
     let x = 0;
     for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
     return x + ":" + txt.length;
