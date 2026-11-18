@@ -257,3 +257,32 @@ header.top .filtros,header.top .ferramentas{display:contents}
 @media (prefers-reduced-motion:reduce){.hub-anel{animation:none}.hub-no,.hub-fio,.hub-orbita,.hub-centro,.hub-grade,.hub-cartao{transition-duration:.01s!important;transition-delay:0s!important;animation-duration:.01s!important}}
 
 .hub:not(.pronto) *{transition:none!important;animation:none!important}
+
+/* ---------- tela de Envio de documentos (própria, fora do quadro) ---------- */
+.ed{--az:#1D9AD5;--az2:#0A74AA;--gf:#12263A;--tx2:#2F4558;--bd2:#D3E6F0;min-height:100vh;display:flex;flex-direction:column;background:#F3F8FB;color:var(--gf)}
+.ed button{border-color:var(--bd2);background:#fff;color:var(--gf)}
+.ed .hub-topo{position:sticky;top:0}
+.ed-esq{display:flex;align-items:center;gap:14px}
+.ed-corpo{width:100%;max-width:1100px;margin:0 auto;padding:28px 24px 40px;flex:1}
+.ed-titulo{display:flex;gap:16px;align-items:center;margin-bottom:22px}
+.ed-sel{width:64px;height:64px;border-radius:18px;background:var(--az);color:var(--gf);display:grid;place-items:center;flex:none}
+.ed-sel .ic{width:30px;height:30px;stroke-width:1.7}
+.ed-titulo h1{margin:0;font-size:24px;font-weight:800}
+.ed-titulo p{margin:4px 0 0;color:var(--tx2);font-size:14px}
+.ed-barra{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:18px}
+.ed-busca{display:flex;align-items:center;gap:8px;flex:1 1 260px;max-width:420px;background:#fff;border:2px solid var(--bd2);border-radius:12px;padding:0 12px;margin:0;color:var(--az2)}
+.ed-busca input{border:0;outline:0;background:none;padding:11px 0;font-size:15px;color:var(--gf)}
+.ed-busca:focus-within{border-color:var(--az)}
+.ed-cont{color:var(--tx2);font-size:13px;flex:1}
+.ed-lista{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:14px}
+.ed-card{background:#fff;border:2px solid var(--bd2);border-radius:18px;padding:16px 18px;display:flex;flex-direction:column;gap:6px}
+.ed-placa{font-size:20px;letter-spacing:.02em}.ed-placa span{color:var(--tx2);font-size:15px}
+.ed-mot{font-weight:700;font-size:15px}
+.ed-st{color:var(--tx2);font-size:12px;min-height:16px}
+.ed-chips{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 10px}
+.ed-chip{display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:600;padding:3px 9px;border-radius:999px;border:1px solid}
+.ed-chip.ok{color:#116a3b;border-color:#9ad8b5;background:#effaf3}
+.ed-chip.falta{color:#8a5a00;border-color:#f1cf86;background:#fff8e6}
+.ed .ed-enviar{margin-top:auto;border:0;background:var(--az);color:var(--gf);font-weight:700;border-radius:12px;min-height:44px;padding:10px 16px}
+.ed .ed-enviar:hover{background:#34a8de}
+@media (max-width:720px){.ed-corpo{padding:18px 14px 28px}.ed-titulo h1{font-size:20px}.ed-sel{width:52px;height:52px}.ed .hub-topo{padding:10px 14px}.ed-esq img{height:30px}.ed-lista{grid-template-columns:1fr}.ed .hub-quem span{display:none}}

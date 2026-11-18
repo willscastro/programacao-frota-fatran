@@ -2,7 +2,7 @@
 // Usa h(), ic(), can(), S e as telas já existentes em app.js / docs.js.
 const MODULOS = [
   { id: "prog", nome: "Planilha de Programação", icone: "m_kanban", perm: "quadro.ver", desc: "O quadro do dia: status, motoristas, cargas, esperas e alertas em tempo real." },
-  { id: "docs", nome: "Envio de documentos", icone: "m_docs", perm: "programacao.editar", desc: "CNH, CRLV, MOPP e demais documentos, com link temporário e envio por WhatsApp." },
+  { id: "docs", nome: "Envio de documentos", icone: "m_docs", perm: "quadro.ver", desc: "CNH, CRLV, MOPP e demais documentos, com link temporário e envio por WhatsApp." },
   { id: "painel", nome: "Indicadores", icone: "m_painel", perm: "dashboard.ver", desc: "Esperas, ocupação da frota e cargas por região, num só lugar." },
   { id: "mapa", nome: "Mapa e rastreamento", icone: "m_mapa", breve: true, desc: "Onde cada conjunto está agora, com a posição vinda do rastreador." },
   { id: "manut", nome: "Manutenção", icone: "m_manut", breve: true, desc: "Agenda de oficina, custos e histórico de paradas por veículo." },
@@ -86,13 +86,13 @@ function mostrarInicioLayout() { if (window.__hubLayout) window.__hubLayout(); }
 // Abre o módulo escolhido. Os módulos usam o quadro como base (dados e permissões já carregados).
 async function abrirModulo(id) {
   if (id === "mapa" || id === "manut") return;
+  if (id === "docs") return telaEnvioDocs(); // tela própria: não abre o quadro
   const primeira = !S.quadroIniciado;
   S.tela = "quadro";
   desenharEstrutura();
   await carregar();
   if (primeira) { S.quadroIniciado = true; assinarTempoReal(); }
-  if (id === "docs") modalDocumentos();
-  else if (id === "painel") abrirPainel();
+  if (id === "painel") abrirPainel();
   else if (id === "adm") modalUsuarios();
 }
-function voltarInicio() { fecharGaveta(); document.querySelectorAll(".modal").forEach((m) => m.remove()); mostrarInicio(); }
+function voltarInicio() { if (S.tela === "quadro") fecharGaveta(); document.querySelectorAll(".modal").forEach((m) => m.remove()); mostrarInicio(); }

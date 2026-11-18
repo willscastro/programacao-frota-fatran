@@ -1180,7 +1180,7 @@ async function abrirMapa() {
 // e recarrega a página quando a pessoa não estiver editando nada.
 async function assinaturaVersao() {
   try {
-    const txt = (await Promise.all(["app.js", "docs.js", "inicio.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
+    const txt = (await Promise.all(["app.js", "docs.js", "inicio.js", "envio.js", "historico.js", "style.css"].map((u) => fetch(u + "?_=" + Date.now(), { cache: "no-store" }).then((r) => (r.ok ? r.text() : Promise.reject(r.status)))))).join("\u0000");
     let x = 0;
     for (let i = 0; i < txt.length; i++) x = (x * 31 + txt.charCodeAt(i)) | 0;
     return x + ":" + txt.length;
