@@ -989,7 +989,7 @@ function barras(titulo, itens, fmt = (v) => v, nota) {
       h("div", { class: "pn-row", title: i.n + ": " + fmt(i.v) + (i.extra ? " · " + i.extra : "") },
         h("span", { class: "pn-lab" }, i.n),
         h("span", { class: "pn-trk" }, h("span", { class: "pn-bar", style: "width:" + Math.max(2, (i.v / max) * 100) + "%" })),
-        h("b", { class: "pn-val" }, fmt(i.v))))) : h("p", { class: "hint" }, "Sem dados no período."),
+        h("b", { class: "pn-val" }, fmt(i.v), i.n_viag ? h("small", { class: "pn-nv" }, i.n_viag + (i.n_viag === 1 ? " viagem" : " viagens")) : null)))) : h("p", { class: "hint" }, "Sem dados no período."),
     nota ? h("p", { class: "hint" }, nota) : null);
 }
 function contar(lista, chave) {
@@ -1081,14 +1081,18 @@ async function abrirPainel(destino) { // destino: elemento da tela própria de I
     const kpi = (rot, val, sub) => h("div", { class: "pn-kpi" }, h("div", { class: "hint" }, rot), h("div", { class: "pn-n" }, String(val)), sub ? h("div", { class: "hint" }, sub) : null);
 
     const esperasC = [], esperasD = [];
+    // Esperas acima de 48 h quase sempre são dado desatualizado (a chegada de uma carga antiga ficou na linha da carga nova): ficam fora da média
+    const LIMITE_ESPERA = 48 * 60; let descartadas = 0;
     periodo.forEach((r) => {
       const c = minEntre(r.cheg_carga, r.carregou_em), d = minEntre(r.cheg_descarga, r.fim_descarga);
-      if (c != null) esperasC.push({ r, v: c }); if (d != null) esperasD.push({ r, v: d });
+      if (c != null) { if (c > LIMITE_ESPERA) descartadas++; else esperasC.push({ r, v: c }); }
+      if (d != null) { if (d > LIMITE_ESPERA) descartadas++; else esperasD.push({ r, v: d }); }
     });
+    const notaEsp = "Só viagens com chegada e saída preenchidas; cada viagem conta uma vez." + (descartadas ? " " + descartadas + " registro(s) com espera acima de 48 h ficaram de fora (provável data desatualizada)." : "");
     const mediaPor = (lista, chave) => {
       const g = new Map();
       lista.forEach(({ r, v }) => { const k = chave(r); if (k) (g.get(k) || g.set(k, []).get(k)).push(v); });
-      return [...g].map(([k, v]) => ({ n: k, v: media(v), extra: v.length + " viagem(ns)" })).sort((a, b) => b.v - a.v).slice(0, 8);
+      return [...g].map(([k, v]) => ({ n: k, v: media(v), n_viag: v.length, extra: v.length + " viagem(ns)" })).sort((a, b) => b.v - a.v).slice(0, 8);
     };
     const vivos = hojeR.map((r) => ({ r, v: esperaViva(r) })).filter((x) => x.v > 0).sort((a, b) => b.v - a.v).slice(0, 5);
     const porStatus = S.status.filter((s) => s.ativo !== false).map((s) => ({ n: rotStatus(s.codigo), v: hojeR.filter((r) => r.status === s.codigo).length })).filter((x) => x.v > 0);
@@ -1117,7 +1121,7 @@ async function abrirPainel(destino) { // destino: elemento da tela própria de I
         kpi("Espera média na descarga", esperasD.length ? fmtMin(media(esperasD.map((x) => x.v))) : "—", esperasD.length + " registro(s)"),
         kpi("Cargas no período", periodo.length, "viagens distintas (cada uma conta uma vez)")),
       h("div", { class: "pn-grid" },
-        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.emb_n), fmtMin, "Só viagens com chegada e saída preenchidas; cada viagem conta uma vez."),
+        barras("Espera média no carregamento por embarcador", mediaPor(esperasC, (r) => r.emb_n), fmtMin, notaEsp),
         barras("Espera média na descarga por destino", mediaPor(esperasD, (r) => r.destino), fmtMin),
         barras("Cargas por embarcador", contar(periodo, (r) => r.emb_n).slice(0, 8)),
         barras("Cargas por motorista", contar(periodo, (r) => r.motorista).slice(0, 8))));
