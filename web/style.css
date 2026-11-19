@@ -241,6 +241,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-rodape{position:relative;margin-top:auto;width:100%;background:var(--gf);border-top:8px solid var(--az);padding:20px 40px;display:flex;justify-content:space-between;font-size:14px;color:#fff;font-weight:600}
 .hub-rodape{flex-wrap:wrap;row-gap:6px}
 .hub-rodape span:nth-child(2){color:#9FD6F0;font-weight:500}
+.hub-credito a{color:inherit;text-decoration:none}.hub-credito a:hover{color:#9FD6F0;text-decoration:underline}
 .hub-credito{flex:0 0 100%;font-size:12px;font-weight:500;color:#9db3c7;border-top:1px solid #ffffff1f;padding-top:8px;text-align:center}
 .btn-inicio{font-weight:600}
 @media (max-width:880px){
