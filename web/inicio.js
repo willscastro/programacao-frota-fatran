@@ -22,8 +22,9 @@ let inicioSel = null;
 
 // Rodapé das telas de módulos: empresa, site e crédito de desenvolvimento
 function rodapeFatran() {
-  return h("div", { class: "hub-rodape" }, h("span", {}, "Fatran Transportes"), h("span", {}, "fatranlog.com.br"),
-    h("span", { class: "hub-credito" }, "Desenvolvido por ", h("a", { href: "https://janustec.com.br/", target: "_blank", rel: "noopener noreferrer" }, "Whitney S Castro - Janus LTDA"), " em parceria com Fatran Transportes"));
+  const fatran = (t) => h("a", { href: "https://fatranlog.com.br/", target: "_blank", rel: "noopener noreferrer" }, t);
+  return h("div", { class: "hub-rodape" }, h("span", {}, fatran("Fatran Transportes")), h("span", {}, fatran("fatranlog.com.br")),
+    h("span", { class: "hub-credito" }, "Desenvolvido por ", h("a", { href: "https://janustec.com.br/", target: "_blank", rel: "noopener noreferrer" }, "Whitney S Castro - Janus LTDA"), " em parceria com ", fatran("Fatran Transportes")));
 }
 
 function mostrarInicio() {

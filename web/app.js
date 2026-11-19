@@ -102,7 +102,7 @@ function telaLogin(msg) {
   } },
     h("h2", {}, "Programação de Frota"), h("div", { class: "hint" }, "Fatran Transportes"),
     h("label", {}, "E-mail"), email, h("label", {}, "Senha"), senha, erro, h("div", { class: "row" }, btn));
-  form.append(h("p", { class: "hint", style: "text-align:center;margin:16px 0 0;font-size:11px" }, "Desenvolvido por ", h("a", { href: "https://janustec.com.br/", target: "_blank", rel: "noopener noreferrer", style: "color:inherit" }, "Whitney S Castro - Janus LTDA"), " em parceria com Fatran Transportes"));
+  form.append(h("p", { class: "hint", style: "text-align:center;margin:16px 0 0;font-size:11px" }, "Desenvolvido por ", h("a", { href: "https://janustec.com.br/", target: "_blank", rel: "noopener noreferrer", style: "color:inherit" }, "Whitney S Castro - Janus LTDA"), " em parceria com ", h("a", { href: "https://fatranlog.com.br/", target: "_blank", rel: "noopener noreferrer", style: "color:inherit" }, "Fatran Transportes")));
   $app.replaceChildren(h("div", { class: "login" }, form));
 }
 
