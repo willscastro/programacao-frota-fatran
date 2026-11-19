@@ -621,7 +621,7 @@ function desenharQuadro() {
   // Setas no cabeçalho de cada coluna (só aparecem no celular): mostram que há mais colunas ao lado e levam até elas
   visiveis.forEach((col, i) => {
     const t = col.querySelector("h2"); if (!t) return;
-    const seta = (dir, alvo) => h("button", { class: "col-seta " + dir, type: "button", draggable: "false", "aria-label": dir === "esq" ? "Coluna anterior" : "Próxima coluna",
+    const seta = (dir, alvo) => h("button", { class: "col-seta " + dir + (alvo.querySelector(".card") ? " cheia" : ""), type: "button", draggable: "false", "aria-label": dir === "esq" ? "Coluna anterior" : "Próxima coluna",
       onclick: (e) => { e.stopPropagation(); alvo.scrollIntoView({ behavior: "smooth", inline: "start", block: "nearest" }); } }, ic(dir));
     if (i > 0) t.prepend(seta("esq", visiveis[i - 1]));
     if (i < visiveis.length - 1) t.append(seta("dir", visiveis[i + 1]));
