@@ -970,11 +970,26 @@ async function modalUsuarios() {
       h("div", {}, "Envie por um canal seguro. Ele precisará trocá-la no primeiro acesso."));
     nome.value = ""; email.value = "";
   } }, "Criar usuário");
+  const resSenha = h("div", { class: "hint", style: "margin:8px 0" });
+  const novaSenha = async (u) => {
+    if (!confirm("Gerar uma nova senha temporária para " + u.nome + "? A senha atual deixa de funcionar.")) return;
+    resSenha.textContent = "Gerando…";
+    const { data, error } = await sb.functions.invoke("redefinir-senha", { body: { id: u.id } });
+    if (error || !data || data.erro) {
+      let msg = (data && data.erro) || "Não foi possível gerar a senha.";
+      try { if (error && error.context) msg = (await error.context.json()).erro || msg; } catch (_) {}
+      resSenha.textContent = msg; return;
+    }
+    resSenha.replaceChildren(h("strong", {}, "Nova senha de " + u.nome + ": "), h("code", {}, data.senha_temporaria),
+      h("div", {}, "Anote agora: ela aparece só desta vez. Envie por um canal seguro; a pessoa precisará trocá-la no próximo acesso."));
+  };
   const linhas = (pf.data || []).map((u) => h("tr", {}, h("td", {}, u.nome), h("td", {}, u.papel), h("td", {}, u.ativo ? "ativo" : "inativo"),
     h("td", {}, u.id === S.perfil.id ? "" : h("button", { onclick: async () => {
       const { error } = await sb.from("prog_perfis").update({ ativo: !u.ativo }).eq("id", u.id);
-      toast(error ? traduzErro(error) : "Atualizado."); } }, u.ativo ? "Desativar" : "Ativar"))));
+      toast(error ? traduzErro(error) : "Atualizado."); } }, u.ativo ? "Desativar" : "Ativar"),
+      u.id === S.perfil.id ? "" : h("button", { style: "margin-left:6px", title: "Gera outra senha temporária (a antiga deixa de valer)", onclick: () => novaSenha(u) }, "Nova senha"))));
   corpo.replaceChildren(
+    resSenha,
     h("table", {}, h("thead", {}, h("tr", {}, h("th", {}, "Nome"), h("th", {}, "Perfil"), h("th", {}, "Situação"), h("th", {}))), h("tbody", {}, linhas)),
     h("h3", {}, "Novo usuário"), h("label", {}, "Nome"), nome, h("label", {}, "E-mail"), email, h("label", {}, "Perfil"), papel, blocoMot,
     h("div", { class: "row", style: "margin-top:12px" }, criar), res);
