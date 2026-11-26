@@ -42,6 +42,66 @@ function rodapeFatran() {
     h("span", { class: "hub-credito" }, "Desenvolvido por ", h("a", { href: "https://janustec.com.br/", target: "_blank", rel: "noopener noreferrer" }, "Whitney S Castro - Janus LTDA"), " em parceria com ", fatran("Fatran Transportes")));
 }
 
+
+// ---------- caminhão na estrada (acima do rodapé azul) ----------
+function estradaCaminhao() {
+  const est = h("div", { class: "hub-estrada", "aria-hidden": "true" });
+  est.innerHTML = '<div class="he-chao"></div><div class="he-truck">' + `<svg viewBox="0 0 440 150" aria-label="Carreta sider da Fatran">
+        <!-- semirreboque sider: cortina lateral com ripas -->
+        <g class="cam-corpo">
+          <rect x="8" y="10" width="300" height="96" rx="5" fill="var(--sider)" stroke="var(--sider-linha)" stroke-width="2"/>
+          <g stroke="var(--sider-linha)" stroke-width="1.4">
+            <path d="M32 14v88M56 14v88M80 14v88M104 14v88M128 14v88M152 14v88M176 14v88M200 14v88M224 14v88M248 14v88M272 14v88M296 14v88" opacity=".75"/>
+          </g>
+          <rect x="8" y="92" width="300" height="14" fill="#1D9AD5"/>
+          <rect x="8" y="106" width="300" height="9" rx="2" fill="#12263A"/>
+          <!-- engate e quinta roda -->
+          <rect x="300" y="108" width="40" height="8" rx="2" fill="#12263A"/>
+          <!-- cavalo mecânico -->
+          <path d="M318 40h46c10 0 17 5 22 14l16 26c3 5 4 9 4 15v21h-88z" fill="#1D9AD5"/>
+          <path d="M338 48h26c6 0 10 3 13 8l11 19h-50z" fill="#cfeaf7" stroke="#0A74AA" stroke-width="1.5"/>
+          <rect x="318" y="30" width="26" height="12" rx="3" fill="#0A74AA"/>
+          <rect x="318" y="96" width="102" height="20" rx="3" fill="#12263A"/>
+          <rect x="414" y="100" width="12" height="8" rx="2" fill="#ffd166"/>
+          <rect x="300" y="70" width="14" height="42" rx="2" fill="#0A74AA"/>
+          <!-- escapamento -->
+          <rect x="322" y="6" width="5" height="42" rx="2" fill="#5d7385"/>
+          <!-- rodas -->
+          <g class="roda"><circle cx="64" cy="124" r="19" fill="#14202c"/><circle cx="64" cy="124" r="9" fill="#9fb3c2"/><path d="M64 115v18M55 124h18" stroke="#14202c" stroke-width="2.4"/></g>
+          <g class="roda"><circle cx="112" cy="124" r="19" fill="#14202c"/><circle cx="112" cy="124" r="9" fill="#9fb3c2"/><path d="M112 115v18M103 124h18" stroke="#14202c" stroke-width="2.4"/></g>
+          <g class="roda"><circle cx="160" cy="124" r="19" fill="#14202c"/><circle cx="160" cy="124" r="9" fill="#9fb3c2"/><path d="M160 115v18M151 124h18" stroke="#14202c" stroke-width="2.4"/></g>
+          <g class="roda"><circle cx="354" cy="124" r="19" fill="#14202c"/><circle cx="354" cy="124" r="9" fill="#9fb3c2"/><path d="M354 115v18M345 124h18" stroke="#14202c" stroke-width="2.4"/></g>
+          <g class="roda"><circle cx="398" cy="124" r="19" fill="#14202c"/><circle cx="398" cy="124" r="9" fill="#9fb3c2"/><path d="M398 115v18M389 124h18" stroke="#14202c" stroke-width="2.4"/></g>
+        </g>
+        <image class="cam-logo" href="logo-fatran.png" x="58" y="26" width="200" height="41"/>
+      </svg>` + '<div class="he-sombra"></div></div>';
+  const tr = est.querySelector(".he-truck"), corpo = est.querySelector(".cam-corpo"), logo = est.querySelector(".cam-logo"), rodas = [...est.querySelectorAll(".roda")];
+  const reduz = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  let x = 0, dir = 1, pausa = 0, ang = 0, t0 = performance.now();
+  const virar = () => { if (dir > 0) { corpo.removeAttribute("transform"); logo.setAttribute("x", "58"); } else { corpo.setAttribute("transform", "translate(440 0) scale(-1 1)"); logo.setAttribute("x", "182"); } };
+  function quadro(t) {
+    if (!est.isConnected || S.tela !== "inicio") return; // a tela mudou: encerra o laço
+    const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
+    const w = Math.max(170, Math.min(230, est.clientWidth * 0.22)); tr.style.width = w + "px";
+    const max = Math.max(0, est.clientWidth - w);
+    if (!reduz) {
+      if (pausa > 0) pausa -= dt;
+      else {
+        const freio = Math.max(0.18, Math.min(1, (dir > 0 ? max - x : x) / 140)), arranque = Math.min(1, (dir > 0 ? x : max - x) / 60 + 0.25);
+        const v = 100 * freio * arranque; x += dir * v * dt; ang += dir * v * dt / 19 * 57.3;
+        if (dir > 0 && x >= max - 0.5) { x = max; pausa = 1.4; dir = -1; virar(); }
+        else if (dir < 0 && x <= 0.5) { x = 0; pausa = 1.4; dir = 1; virar(); }
+      }
+    }
+    const bob = !reduz && pausa <= 0 ? Math.sin(t / 90) * 0.7 : 0;
+    tr.style.transform = "translate(" + x.toFixed(1) + "px," + bob.toFixed(2) + "px)";
+    rodas.forEach((r) => { r.style.transform = "rotate(" + ang.toFixed(1) + "deg)"; });
+    requestAnimationFrame(quadro);
+  }
+  requestAnimationFrame(quadro);
+  return est;
+}
+
 function mostrarInicio() {
   Object.assign(ICONES, ICONES_INICIO);
   S.tela = "inicio"; inicioSel = null;
@@ -100,6 +160,7 @@ function mostrarInicio() {
       h("div", { class: "hub-quem" }, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     dica, palco, legenda,
+    estradaCaminhao(),
     rodapeFatran());
   $app.replaceChildren(pag);
   layout();

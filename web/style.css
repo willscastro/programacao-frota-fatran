@@ -214,7 +214,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-quem{display:flex;align-items:center;gap:12px;font-size:13px;color:var(--tx2)}
 .hub-dica{position:relative;margin:14px 0 0;font-size:14px;font-weight:500;color:var(--tx2);text-align:center;height:20px;transition:opacity .4s,transform .4s}
 .hub.aberto .hub-dica{opacity:0;transform:translateY(-6px)}
-.hub-palco{position:relative;width:100%;flex:1 1 0;min-height:360px}
+.hub-palco{position:relative;width:100%;flex:1 1 0;min-height:280px}
 .hub-stage{position:absolute;left:50%;top:50%;width:960px;height:640px;margin:-320px 0 0 -480px;transform:scale(var(--k,1))}
 .hub-centro{position:absolute;left:50%;top:50%;width:176px;height:176px;margin:-88px 0 0 -88px;border-radius:50%!important;border:2px solid var(--bd2)!important;background:var(--hubcard,#fff)!important;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0;z-index:5;box-shadow:0 18px 44px #12263A26;transition:transform .6s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .3s}
 .hub-centro:hover{border-color:var(--az)!important;box-shadow:0 18px 54px #12263A33,0 0 0 8px #1D9AD52b}
@@ -352,3 +352,16 @@ body.tv .col{flex:0 0 auto!important;display:grid;grid-template-columns:repeat(v
 body.tv .col h2{grid-column:1/-1;grid-row:1}
 body.tv .tv-bar,body.tv .resumo{zoom:var(--tvz,1)}
 body.tv .resumo{top:var(--tvbar,52px)}
+
+/* estrada com a carreta, logo acima da faixa azul do rodapé */
+.hub-estrada{--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:112px;overflow:hidden;margin-top:auto;flex:0 0 auto}
+.hub-estrada+.hub-rodape{margin-top:0}
+html[data-tema="dark"] .hub-estrada{--asfalto:#07111a;--faixa:#3a5266;--sider:#e9f2f8;--sider-linha:#b4c8d6}
+.he-chao{position:absolute;left:0;right:0;bottom:0;height:36px;background:var(--asfalto)}
+.he-chao::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#1D9AD5}
+.he-chao::after{content:"";position:absolute;left:0;right:0;top:17px;height:3px;background:repeating-linear-gradient(90deg,var(--faixa) 0 30px,transparent 30px 60px)}
+.he-truck{position:absolute;left:0;bottom:19px;width:260px;will-change:transform}
+.he-truck svg{display:block;width:100%;height:auto;overflow:visible}
+.he-truck .roda{transform-box:fill-box;transform-origin:center}
+.he-sombra{position:absolute;left:4%;right:4%;bottom:-6px;height:8px;border-radius:50%;background:#0006;filter:blur(4px)}
+@media (max-height:820px) and (min-width:881px){.hub-rodape{padding:12px 40px}.hub-dica{margin-top:8px}.hub-legenda{min-height:100px}}
