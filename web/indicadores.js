@@ -7,7 +7,7 @@ async function telaIndicadores() {
   $app.replaceChildren(h("div", { class: "ed" },
     h("div", { class: "hub-topo" },
       h("div", { class: "ed-esq" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }), h("button", { type: "button", class: "btn-inicio", onclick: voltarInicio }, ic("casa"), " Início")),
-      h("div", { class: "hub-quem" }, h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"), h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
+      h("div", { class: "hub-quem" }, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"), h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     h("main", { class: "ed-corpo" },
       h("div", { class: "ed-titulo" }, h("span", { class: "ed-sel" }, ic("m_painel")),
         h("div", {}, h("h1", {}, "Indicadores"), h("p", {}, "Situação da frota hoje, esperas, manutenção e cargas por período."))),

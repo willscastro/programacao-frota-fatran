@@ -15,10 +15,25 @@ const ICONES_INICIO = {
   m_mapa: '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
   m_manut: '<path d="M14.5 6.5a4 4 0 0 1 5.2-3.5l-2.5 2.5 1.8 1.8 2.5-2.5a4 4 0 0 1-5 5.2L8 18.5a2.1 2.1 0 0 1-3-3z"/>',
   m_admin: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
+  lua: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
+  sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
 };
 
 let inicioSel = null;
+
+// Tema claro/escuro: o sistema SEMPRE abre no claro (não guarda a escolha); o botão alterna só durante o uso.
+function temaEscuro() { return document.documentElement.dataset.tema === "dark"; }
+function iconeTema(b) { Object.assign(ICONES, ICONES_INICIO); b.replaceChildren(ic(temaEscuro() ? "sol" : "lua")); const t = temaEscuro() ? "Mudar para o tema claro" : "Mudar para o tema escuro"; b.title = t; b.setAttribute("aria-label", t); }
+function botaoTema() {
+  const b = h("button", { type: "button", class: "btn-tema" });
+  b.onclick = () => {
+    document.documentElement.dataset.tema = temaEscuro() ? "light" : "dark";
+    document.querySelectorAll(".btn-tema").forEach(iconeTema);
+  };
+  iconeTema(b);
+  return b;
+}
 
 // Rodapé das telas de módulos: empresa, site e crédito de desenvolvimento
 function rodapeFatran() {
@@ -79,7 +94,7 @@ function mostrarInicio() {
 
   pag.append(
     h("div", { class: "hub-topo" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }),
-      h("div", { class: "hub-quem" }, h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
+      h("div", { class: "hub-quem" }, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     dica, palco, legenda,
     rodapeFatran());

@@ -14,7 +14,7 @@ async function telaEnvioDocs() {
   $app.replaceChildren(h("div", { class: "ed" },
     h("div", { class: "hub-topo" },
       h("div", { class: "ed-esq" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }), h("button", { type: "button", class: "btn-inicio", onclick: voltarInicio }, ic("casa"), " Início")),
-      h("div", { class: "hub-quem" }, h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"), h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
+      h("div", { class: "hub-quem" }, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"), h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     h("main", { class: "ed-corpo" },
       h("div", { class: "ed-titulo" }, h("span", { class: "ed-sel" }, ic("m_docs")),
         h("div", {}, h("h1", {}, "Envio de documentos"), h("p", {}, "Escolha o veículo e mande os dados do motorista, do caminhão e os documentos por WhatsApp."))),

@@ -449,7 +449,8 @@ function desenharEstrutura() {
     h("header", { class: "top" },
       h("button", { class: "btn-inicio", title: "Voltar ao menu inicial", onclick: voltarInicio }, ic("casa"), " Início"),
       h("div", { class: "titulo", style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
-      h("button", { class: "menu-btn", "aria-expanded": "false", onclick: (e) => { const hd = e.currentTarget.closest("header"); const a = hd.classList.toggle("aberto"); e.currentTarget.setAttribute("aria-expanded", String(a)); } }, ic("menu"), " Menu"),
+      h("div", { class: "hd-dir" }, botaoTema(),
+        h("button", { class: "menu-btn", "aria-label": "Menu", "aria-expanded": "false", onclick: (e) => { const hd = e.currentTarget.closest("header"); const a = hd.classList.toggle("aberto"); e.currentTarget.setAttribute("aria-expanded", String(a)); } }, ic("menu"), h("span", { class: "mb-t" }, " Menu"))),
       h("div", { class: "diaNav" },
         h("button", { title: "Dia anterior", disabled: !vizinho(-1), onclick: () => irParaDia(vizinho(-1)) }, ic("esq")),
         h("b", {}, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
@@ -996,6 +997,7 @@ async function modalUsuarios() {
 }
 
 // ---------- start ----------
+document.documentElement.dataset.tema = "light"; // sempre começa no tema claro
 sb.auth.getSession().then(({ data }) => (data.session ? iniciar() : telaLogin()));
 
 
