@@ -65,7 +65,8 @@ function mostrarInicio() {
     return b;
   });
   const grade = h("div", { class: "hub-grade" }, ...nos);
-  palco.append(h("span", { class: "hub-anel" }), orbita, ...fios, centro, grade);
+  const palco_ = h("div", { class: "hub-stage" }, h("span", { class: "hub-anel" }), orbita, ...fios, centro, grade);
+  palco.append(palco_);
 
   function marcar() {
     nos.forEach((b) => b.classList.toggle("sel", b.dataset.id === inicioSel));
@@ -78,8 +79,10 @@ function mostrarInicio() {
   }
   function layout() {
     if (S.tela !== "inicio") return;
-    const w = palco.clientWidth, hh = palco.clientHeight;
-    const rx = Math.max(150, Math.min(w / 2 - 76, 400)), ry = Math.max(100, Math.min(hh / 2 - 100, 250));
+    // Palco de tamanho fixo (960x640) reduzido/ampliado para caber na tela, seja notebook, monitor ou TV
+    const rx = 400, ry = 240;
+    const k = Math.min(palco.clientWidth / 960, palco.clientHeight / 640, 2);
+    palco_.style.setProperty("--k", Math.max(k, 0.3).toFixed(3));
     orbita.style.width = Math.round(rx * 2) + "px"; orbita.style.height = Math.round(ry * 2) + "px";
     const n = mods.length;
     mods.forEach((_, i) => {
