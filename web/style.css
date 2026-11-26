@@ -354,9 +354,9 @@ body.tv .tv-bar,body.tv .resumo{zoom:var(--tvz,1)}
 body.tv .resumo{top:var(--tvbar,52px)}
 
 /* estrada com a carreta, logo acima da faixa azul do rodapé */
-.hub-estrada{--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:136px;overflow:hidden;margin-top:auto;flex:0 0 auto}
+.hub-estrada{--rd-linha:#12263A;--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:136px;overflow:hidden;margin-top:auto;flex:0 0 auto}
 .hub-estrada+.hub-rodape{margin-top:0}
-html[data-tema="dark"] .hub-estrada{--asfalto:#07111a;--faixa:#3a5266;--sider:#e9f2f8;--sider-linha:#b4c8d6}
+html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa:#3a5266;--sider:#e9f2f8;--sider-linha:#b4c8d6}
 .he-chao{position:absolute;left:0;right:0;bottom:0;height:36px;background:var(--asfalto)}
 .he-chao::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#1D9AD5}
 .he-chao::after{content:"";position:absolute;left:0;right:0;top:17px;height:3px;background:repeating-linear-gradient(90deg,var(--faixa) 0 30px,transparent 30px 60px)}
@@ -365,3 +365,25 @@ html[data-tema="dark"] .hub-estrada{--asfalto:#07111a;--faixa:#3a5266;--sider:#e
 .he-truck .roda{transform-box:fill-box;transform-origin:center}
 .he-sombra{position:absolute;left:4%;right:4%;bottom:-6px;height:8px;border-radius:50%;background:#0006;filter:blur(4px)}
 @media (max-height:820px) and (min-width:881px){.hub-rodape{padding:12px 40px}.hub-dica{margin-top:8px}.hub-legenda{min-height:100px}}
+
+/* radar de brincadeira: fotografa o caminhão quando ele passa */
+.he-radar{position:absolute;left:58%;bottom:34px;width:84px;height:88px;z-index:2;pointer-events:none}
+.he-radar svg{display:block;width:100%;height:100%;overflow:visible}
+.he-ondas path{animation:heonda 2.4s ease-in-out infinite;opacity:.25}.he-ondas path:nth-child(2){animation-delay:.25s}.he-ondas path:nth-child(3){animation-delay:.5s}
+@keyframes heonda{0%,100%{opacity:.15}40%{opacity:.85}}
+.he-flash{opacity:0;transform-box:fill-box;transform-origin:center}
+.he-radar.flash .he-flash{animation:heflash .5s ease-out}
+@keyframes heflash{0%{opacity:1;transform:scale(.3)}30%{opacity:1;transform:scale(1.25)}100%{opacity:0;transform:scale(1.5)}}
+.he-cam{position:absolute;left:calc(58% + 58px);bottom:36px;width:34px;opacity:0;z-index:3}
+.he-cam svg{display:block;width:100%}
+.he-cam.foto{animation:hecam 1.6s ease-out}
+@keyframes hecam{0%{opacity:0;transform:translateY(8px) scale(.5)}15%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0;transform:translateY(-4px)}}
+.he-placar{position:absolute;left:calc(58% + 96px);bottom:44px;width:86px;padding:6px 6px 4px;border:3px solid #1D9AD5;border-radius:10px;background:#12263A;color:#fff;text-align:center;line-height:1;opacity:0;z-index:3;pointer-events:none;overflow:hidden}
+.he-placar b{display:block;font-size:24px;font-weight:800;font-variant-numeric:tabular-nums;letter-spacing:-.5px}
+.he-placar i{display:block;font-style:normal;font-size:9px;font-weight:700;letter-spacing:.12em;color:#9FD6F0;margin:1px 0 3px}
+.he-fant{display:block;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums;color:#9aa8b4;opacity:.45;-webkit-mask-image:linear-gradient(#000,transparent);mask-image:linear-gradient(#000,transparent)}
+.he-fant.f2{font-size:20px;opacity:.22;margin-top:-4px}
+.he-placar.ver{animation:heplacar 2.6s ease-out}
+@keyframes heplacar{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
+@media (max-width:880px){.he-radar{width:64px;height:67px}.he-cam{left:calc(58% + 44px);width:26px}.he-placar{left:calc(58% + 70px);width:70px}.he-placar b{font-size:19px}}
+@media (prefers-reduced-motion:reduce){.he-ondas path{animation:none;opacity:.5}}
