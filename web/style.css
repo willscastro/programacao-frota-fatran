@@ -374,7 +374,7 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 .he-radar.flash .he-r1{animation:herad1 1.3s ease-out}
 @keyframes herad2{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
 @keyframes herad1{0%{opacity:0}80%{opacity:0}100%{opacity:1}}
-.he-placar{zoom:var(--s,1);--H:84px;--c:#6dff96;position:absolute;left:calc(58% + 92px);bottom:38px;height:var(--H);opacity:0;z-index:3;pointer-events:none;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
+.he-placar{zoom:var(--s,1);--H:84px;--c:#6dff96;position:absolute;left:calc(58% + 92px);bottom:38px;height:var(--H);opacity:0;z-index:6;pointer-events:none;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
 .he-placar.vermelho{--c:#ff6a6a}
 .he-placar img{display:block;height:100%;width:auto}
 .he-placar>span,.he-placar>i{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;font-style:normal}
