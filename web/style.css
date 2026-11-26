@@ -387,3 +387,5 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 @keyframes heplacar{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
 @media (max-width:880px){.he-radar{width:64px;height:67px}.he-cam{left:calc(58% + 44px);width:26px}.he-placar{left:calc(58% + 70px);width:70px}.he-placar b{font-size:19px}}
 @media (prefers-reduced-motion:reduce){.he-ondas path{animation:none;opacity:.5}}
+.he-placar.esq{left:calc(58% - 98px)}.he-cam.esq{left:calc(58% - 36px)}
+@media (max-width:880px){.he-placar.esq{left:calc(58% - 76px)}.he-cam.esq{left:calc(58% - 28px)}}
