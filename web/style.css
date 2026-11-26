@@ -412,3 +412,15 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 @keyframes hetoucal{0%{transform:rotate(8deg)}100%{transform:rotate(19deg)}}
 @media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}}
 @media (prefers-reduced-motion:reduce){.he-sway,.lz,.pl-b,.pl-c{animation:none}}
+
+/* ---------- neve ---------- */
+.hub-neve{position:absolute;inset:0;z-index:4;pointer-events:none;overflow:hidden}
+.nv-fio{position:absolute;top:0;will-change:transform;animation:nvcai linear infinite}
+@keyframes nvcai{from{transform:translate3d(0,-60px,0)}to{transform:translate3d(0,calc(100vh + 60px),0)}}
+.nv-fio img{display:block;height:auto;will-change:transform;animation:nvbal ease-in-out infinite alternate;filter:drop-shadow(0 0 1.5px rgba(29,154,213,.75)) drop-shadow(0 1px 2px rgba(18,38,58,.18))}
+@keyframes nvbal{from{transform:translateX(calc(var(--sw)*-1)) rotate(var(--r0))}to{transform:translateX(var(--sw)) rotate(var(--r1))}}
+.nv-vento{position:absolute;left:0;height:auto;opacity:0;filter:drop-shadow(0 0 1.5px rgba(29,154,213,.7));animation:nvvento ease-in-out forwards}
+@keyframes nvvento{0%{transform:translateX(-30vw);opacity:0}15%{opacity:.85}80%{opacity:.85}100%{transform:translateX(105vw);opacity:0}}
+.he-montes{position:absolute;left:0;right:0;bottom:calc(36px*var(--s,1) - 5px*var(--s,1));height:0;zoom:var(--s,1);pointer-events:none}
+.he-montes img{position:absolute;bottom:0;height:auto;transform:translateX(-10%);filter:drop-shadow(0 0 1px rgba(29,154,213,.7))}
+@media (prefers-reduced-motion:reduce){.nv-fio,.nv-fio img{animation:none}.nv-fio{top:calc(var(--y,40)*1%)}}

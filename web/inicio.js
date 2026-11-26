@@ -50,10 +50,54 @@ function temaNatal() {
   const d = new Date(), m = d.getMonth(), dia = d.getDate();
   return (m === 10 && dia >= 20) || m === 11 || (m === 0 && dia <= 6);
 }
+
+// Neve do tema de Natal: flocos caindo em profundidades diferentes, rajadas de vento e montinhos na beira da estrada
+function nevar(pag) {
+  const reduz = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const cam = h("div", { class: "hub-neve", "aria-hidden": "true" });
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const flocos = ["f1", "f2", "f3", "f4", "f5", "f6", "f7", "f8", "f9"], bolas = ["b7", "b8", "b9"];
+  const n = Math.round(Math.max(22, Math.min(70, window.innerWidth / 26)));
+  for (let i = 0; i < n; i++) {
+    const prof = Math.random(); // 0 = longe (pequeno, lento, apagado) ... 1 = perto (grande, rápido)
+    const bola = Math.random() < 0.14;
+    const src = "neve-" + (bola ? bolas[i % bolas.length] : flocos[Math.floor(Math.random() * flocos.length)]) + ".png";
+    const tam = bola ? rnd(8, 22) : 12 + prof * 38;
+    const dur = rnd(13, 22) - prof * 7;
+    const fio = h("span", { class: "nv-fio", style: "left:" + rnd(-3, 100).toFixed(1) + "%;animation-duration:" + dur.toFixed(1) + "s;animation-delay:-" + rnd(0, dur).toFixed(1) + "s" },
+      h("img", { src, alt: "", draggable: "false", style: "width:" + tam.toFixed(0) + "px;opacity:" + (0.4 + prof * 0.42).toFixed(2) + ";--sw:" + rnd(14, 46).toFixed(0) + "px;--r0:" + rnd(-40, 40).toFixed(0) + "deg;--r1:" + rnd(-200, 200).toFixed(0) + "deg;animation-duration:" + rnd(3.5, 7).toFixed(1) + "s;animation-delay:-" + rnd(0, 6).toFixed(1) + "s" }));
+    cam.append(fio);
+  }
+  pag.append(cam);
+  // rajadas de vento que cruzam a tela de vez em quando
+  if (!reduz) {
+    let id = 0;
+    const vento = () => {
+      if (!cam.isConnected || S.tela !== "inicio") return;
+      const alt = cam.clientHeight || window.innerHeight, v = h("img", { class: "nv-vento", alt: "", draggable: "false", src: "neve-w" + (1 + (id++ % 6)) + ".png",
+        style: "top:" + rnd(8, 62).toFixed(0) + "%;width:" + rnd(200, 340).toFixed(0) + "px;animation-duration:" + rnd(5, 8).toFixed(1) + "s" });
+      cam.append(v); setTimeout(() => v.remove(), 9000);
+      setTimeout(vento, rnd(9000, 17000));
+    };
+    setTimeout(vento, 2500);
+  }
+}
+// montinhos de neve sobre a beira da estrada (ficam atrás do caminhão e do radar)
+function neveEstrada(est) {
+  const mons = h("div", { class: "he-montes" });
+  const N = Math.max(5, Math.round(est.clientWidth / 240)), ids = [1, 2, 3, 4, 5, 7];
+  for (let i = 0; i < N; i++) {
+    const w = 70 + Math.random() * 110;
+    mons.append(h("img", { src: "neve-m" + ids[Math.floor(Math.random() * ids.length)] + ".png", alt: "", draggable: "false", style: "left:" + ((i + Math.random() * 0.7) / N * 100).toFixed(1) + "%;width:" + w.toFixed(0) + "px" }));
+  }
+  est.insertBefore(mons, est.firstChild.nextSibling); // logo depois do chão
+}
+
 function estradaCaminhao() {
   const natal = temaNatal();
   const est = h("div", { class: "hub-estrada" + (natal ? " natal" : ""), "aria-hidden": "true" });
   est.innerHTML = '<div class="he-chao"></div>' + `` + (natal ? `<div class="he-radar"><div class="he-sway"><div class="he-r1"></div><i class="lz" style="left:54.9%;top:77.5%;animation-delay:0.00s"></i><i class="lz" style="left:46.9%;top:82.8%;animation-delay:0.37s"></i><i class="lz" style="left:36.3%;top:81.4%;animation-delay:0.74s"></i><i class="lz" style="left:31.2%;top:74.3%;animation-delay:1.11s"></i><i class="lz" style="left:35.4%;top:66.9%;animation-delay:1.48s"></i><i class="lz" style="left:45.7%;top:64.7%;animation-delay:0.25s"></i><i class="lz" style="left:54.4%;top:69.4%;animation-delay:0.62s"></i><img class="he-r2" src="natal-radar-flash.png" alt=""></div></div><div class="he-placar"><div class="pl-bg"></div><div class="pl-bg pl-b"></div><div class="pl-bg pl-c"></div><span class="he-n">80</span><i class="he-u">KM/H</i><span class="he-g g1">80</span><span class="he-g g2">80</span></div>` : `<div class="he-radar"><img class="he-r1" src="radar-1.png" alt=""><img class="he-r2" src="radar-2.png" alt=""></div><div class="he-placar"><img src="placar-vazio-verde.png" alt=""><span class="he-n">80</span><i class="he-u">KM/H</i><span class="he-g g1">80</span><span class="he-g g2">80</span></div>`) + `` + '<div class="he-truck">' + `<svg viewBox="0 0 1240 420" aria-label="Carreta sider da Fatran"><image class="cam-img" href="carreta-dir.png" x="0" y="0" width="1240" height="420"/><g class="rodaw" data-x="205" transform="translate(205 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="319" transform="translate(319 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="434" transform="translate(434 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="741" transform="translate(741 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="868" transform="translate(868 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="1080" transform="translate(1080 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g></svg>` + (natal ? '<div class="he-touca"></div>' : '') + '<div class="he-sombra"></div></div>';
+  if (natal) neveEstrada(est);
   const tr = est.querySelector(".he-truck"), img = est.querySelector(".cam-img"), rodasw = [...est.querySelectorAll(".rodaw")], rodas = [...est.querySelectorAll(".roda")];
   const reduz = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
   let x = -400, escAnt = 0, dir = 1, pausa = 0, ang = 0, t0 = performance.now(), ultimoFlash = 0, frenteAnt = null;
@@ -164,6 +208,7 @@ function mostrarInicio() {
     dica, palco, legenda,
     estradaCaminhao(),
     rodapeFatran());
+  if (temaNatal()) nevar(pag);
   $app.replaceChildren(pag);
   layout();
   requestAnimationFrame(() => requestAnimationFrame(() => pag.classList.add("pronto"))); // só anima depois da 1ª posição calculada
