@@ -387,22 +387,29 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 @keyframes heplacar{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
 @media (max-width:880px){.he-radar{width:64px;height:69px}.he-placar{--H:68px;left:calc(58% + 72px)}.he-placar.esq{left:calc(58% - 58px)}}
 
-/* ---------- tema de Natal (de 20/11 a 06/01) ---------- */
+/* ---------- tema de Natal (de 20/11 a 06/01): movimentos suaves, sem trocar de quadro ---------- */
 .hub-estrada.natal{height:158px}
 .natal .he-radar{--rw:95px;width:var(--rw);height:96px;left:calc(58% - 41px);bottom:33px}
-.natal .he-r1{position:absolute;inset:0;background:url(natal-radar.png) 0 0/calc(var(--rw)*10) 100% no-repeat;animation:henatalr 1.4s steps(10) infinite}
-@keyframes henatalr{to{background-position-x:calc(var(--rw)*-10)}}
+.he-sway{position:absolute;inset:0;transform-origin:43% 98%;animation:hesway 3.2s ease-in-out infinite alternate}
+@keyframes hesway{0%{transform:rotate(-2.2deg) translateY(0)}50%{transform:rotate(0deg) translateY(-1px)}100%{transform:rotate(2.2deg) translateY(0)}}
+.natal .he-r1{position:absolute;inset:0;background:url(natal-radar-1.png) 0 0/100% 100% no-repeat}
 .natal .he-r2{left:0;top:0;width:100%;height:100%}
 .natal .he-radar.flash .he-r1{animation:herad1 1.3s ease-out}
+.lz{position:absolute;width:4px;height:4px;margin:-2px 0 0 -2px;border-radius:50%;background:#ffe27a;box-shadow:0 0 5px 1px #ffd24a;opacity:.25;animation:helz 1.6s ease-in-out infinite}
+.lz:nth-of-type(2n){background:#ff7a7a;box-shadow:0 0 5px 1px #ff5a5a}.lz:nth-of-type(3n){background:#9fe8ff;box-shadow:0 0 5px 1px #6fd3ff}
+@keyframes helz{0%,100%{opacity:.2}50%{opacity:1}}
 .natal .he-placar{--H:86px;width:calc(var(--H)*124/128);left:calc(58% + 56px);bottom:36px}
 .natal .he-placar.esq{left:calc(58% - 98px)}
-.natal .pl-bg{position:absolute;inset:0;background:url(natal-placar.png) 0 0/300% 100% no-repeat;animation:henatalp .9s steps(3) infinite}
-@keyframes henatalp{to{background-position-x:150%}}
+.natal .pl-bg{position:absolute;inset:0;background:url(natal-placar.png) 0 0/300% 100% no-repeat}
+.natal .pl-b{background-position:50% 0;opacity:0;animation:hepl 2.4s ease-in-out infinite}
+.natal .pl-c{background-position:100% 0;opacity:0;animation:hepl 2.4s ease-in-out infinite 1.2s}
+@keyframes hepl{0%,100%{opacity:0}50%{opacity:1}}
 .natal .he-n{left:50%;top:27%}.natal .he-u{left:69%;top:44%;font-size:calc(var(--H)*.075)}.natal .he-g{left:51%}
 .natal .g1{top:54%}.natal .g2{top:74%}
-.he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:84%;top:-21%;background:url(natal-touca.png) 0 0/900% 100% no-repeat;animation:hetouca 1.2s steps(9) infinite;z-index:1}
-@keyframes hetouca{to{background-position-x:112.5%}}
-.he-truck.esq .he-touca{left:4%;transform:scaleX(-1)}
-.hub-touca{position:absolute;right:-6px;top:-34px;width:78px;aspect-ratio:110/92;background:url(natal-touca.png) 0 0/900% 100% no-repeat;animation:hetouca 1.6s steps(9) infinite;pointer-events:none;transform:rotate(14deg);transform-origin:20% 90%}
+.he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:83%;top:-20%;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;transform-origin:30% 95%;animation:hetouca 1.8s ease-in-out infinite alternate;z-index:1}
+@keyframes hetouca{0%{transform:rotate(-5deg)}100%{transform:rotate(4deg) translateY(-1px)}}
+.he-truck.esq .he-touca{left:5%;scale:-1 1}
+.hub-touca{position:absolute;right:-6px;top:-34px;width:78px;aspect-ratio:110/92;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;pointer-events:none;transform-origin:25% 90%;animation:hetoucal 2.6s ease-in-out infinite alternate}
+@keyframes hetoucal{0%{transform:rotate(8deg)}100%{transform:rotate(19deg)}}
 @media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}.hub-touca{width:60px;top:-26px}}
-@media (prefers-reduced-motion:reduce){.natal .he-r1,.natal .pl-bg,.he-touca,.hub-touca{animation:none}}
+@media (prefers-reduced-motion:reduce){.he-sway,.lz,.pl-b,.pl-c,.he-touca,.hub-touca{animation:none}}
