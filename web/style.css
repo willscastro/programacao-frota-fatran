@@ -386,3 +386,23 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 .he-placar.ver{animation:heplacar 2.6s ease-out}
 @keyframes heplacar{0%{opacity:0;transform:translateY(8px)}10%,80%{opacity:1;transform:none}100%{opacity:0}}
 @media (max-width:880px){.he-radar{width:64px;height:69px}.he-placar{--H:68px;left:calc(58% + 72px)}.he-placar.esq{left:calc(58% - 58px)}}
+
+/* ---------- tema de Natal (de 20/11 a 06/01) ---------- */
+.hub-estrada.natal{height:158px}
+.natal .he-radar{--rw:95px;width:var(--rw);height:96px;left:calc(58% - 41px);bottom:33px}
+.natal .he-r1{position:absolute;inset:0;background:url(natal-radar.png) 0 0/calc(var(--rw)*10) 100% no-repeat;animation:henatalr 1.4s steps(10) infinite}
+@keyframes henatalr{to{background-position-x:calc(var(--rw)*-10)}}
+.natal .he-r2{left:0;top:0;width:100%;height:100%}
+.natal .he-radar.flash .he-r1{animation:herad1 1.3s ease-out}
+.natal .he-placar{--H:86px;width:calc(var(--H)*124/128);left:calc(58% + 56px);bottom:36px}
+.natal .he-placar.esq{left:calc(58% - 98px)}
+.natal .pl-bg{position:absolute;inset:0;background:url(natal-placar.png) 0 0/300% 100% no-repeat;animation:henatalp .9s steps(3) infinite}
+@keyframes henatalp{to{background-position-x:150%}}
+.natal .he-n{left:50%;top:27%}.natal .he-u{left:69%;top:44%;font-size:calc(var(--H)*.075)}.natal .he-g{left:51%}
+.natal .g1{top:54%}.natal .g2{top:74%}
+.he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:84%;top:-21%;background:url(natal-touca.png) 0 0/900% 100% no-repeat;animation:hetouca 1.2s steps(9) infinite;z-index:1}
+@keyframes hetouca{to{background-position-x:112.5%}}
+.he-truck.esq .he-touca{left:4%;transform:scaleX(-1)}
+.hub-touca{position:absolute;right:-6px;top:-34px;width:78px;aspect-ratio:110/92;background:url(natal-touca.png) 0 0/900% 100% no-repeat;animation:hetouca 1.6s steps(9) infinite;pointer-events:none;transform:rotate(14deg);transform-origin:20% 90%}
+@media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}.hub-touca{width:60px;top:-26px}}
+@media (prefers-reduced-motion:reduce){.natal .he-r1,.natal .pl-bg,.he-touca,.hub-touca{animation:none}}
