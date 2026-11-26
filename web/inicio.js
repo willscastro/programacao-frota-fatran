@@ -25,17 +25,10 @@ const ICONES_INICIO = {
 let inicioSel = null;
 
 // Tema claro/escuro: o sistema SEMPRE abre no claro (não guarda a escolha); o botão alterna só durante o uso.
-function temaEscuro() { return document.documentElement.dataset.tema === "dark"; }
+function temaEscuro() { return false; }
 function iconeTema(b) { Object.assign(ICONES, ICONES_INICIO); b.replaceChildren(ic(temaEscuro() ? "sol" : "lua")); const t = temaEscuro() ? "Mudar para o tema claro" : "Mudar para o tema escuro"; b.title = t; b.setAttribute("aria-label", t); }
-function botaoTema() {
-  const b = h("button", { type: "button", class: "btn-tema" });
-  b.onclick = () => {
-    document.documentElement.dataset.tema = temaEscuro() ? "light" : "dark";
-    document.querySelectorAll(".btn-tema").forEach(iconeTema);
-  };
-  iconeTema(b);
-  return b;
-}
+// O sistema é sempre no tema claro (sem opção de tema escuro).
+function botaoTema() { return null; }
 
 
 // Música de fundo de Natal: melodias tradicionais (domínio público) sintetizadas aqui mesmo, em timbre de caixinha de música, bem baixinha.
@@ -74,7 +67,7 @@ const MUSICA = (() => {
     ctx.resume(); ligada = true; prox = ctx.currentTime + 0.2; agenda(); return true;
   }
   function desligar() { ligada = false; clearTimeout(timer); if (ctx) ctx.suspend(); }
-  const icone = (b) => { b.replaceChildren(ic(ligada ? "musica" : "musica_off")); const t = ligada ? "Desligar a música de Natal" : "Ligar a música de Natal"; b.title = t; b.setAttribute("aria-label", t); b.setAttribute("aria-pressed", String(ligada)); };
+  const icone = (b) => { Object.assign(ICONES, ICONES_INICIO); b.replaceChildren(ic(ligada ? "musica" : "musica_off")); const t = ligada ? "Desligar a música de Natal" : "Ligar a música de Natal"; b.title = t; b.setAttribute("aria-label", t); b.setAttribute("aria-pressed", String(ligada)); };
   return {
     botao() {
       const b = h("button", { type: "button", class: "btn-tema btn-musica" });
