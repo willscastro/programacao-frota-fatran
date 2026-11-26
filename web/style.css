@@ -354,27 +354,27 @@ body.tv .tv-bar,body.tv .resumo{zoom:var(--tvz,1)}
 body.tv .resumo{top:var(--tvbar,52px)}
 
 /* estrada com a carreta, logo acima da faixa azul do rodapé */
-.hub-estrada{--rd-linha:#12263A;--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:136px;overflow:hidden;margin-top:auto;flex:0 0 auto}
+.hub-estrada{--rd-linha:#12263A;--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:calc(136px*var(--s,1));overflow:hidden;margin-top:auto;flex:0 0 auto}
 .hub-estrada+.hub-rodape{margin-top:0}
 html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa:#3a5266;--sider:#e9f2f8;--sider-linha:#b4c8d6}
-.he-chao{position:absolute;left:0;right:0;bottom:0;height:36px;background:var(--asfalto)}
+.he-chao{position:absolute;left:0;right:0;bottom:0;height:calc(36px*var(--s,1));zoom:1;background:var(--asfalto)}
 .he-chao::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#1D9AD5}
-.he-chao::after{content:"";position:absolute;left:0;right:0;top:17px;height:3px;background:repeating-linear-gradient(90deg,var(--faixa) 0 30px,transparent 30px 60px)}
-.he-truck{position:absolute;left:0;bottom:18px;width:260px;will-change:transform}
+.he-chao::after{content:"";position:absolute;left:0;right:0;top:calc(17px*var(--s,1));height:calc(3px*var(--s,1));background:repeating-linear-gradient(90deg,var(--faixa) 0 calc(30px*var(--s,1)),transparent calc(30px*var(--s,1)) calc(60px*var(--s,1)))}
+.he-truck{position:absolute;left:0;bottom:calc(18px*var(--s,1));width:260px;will-change:transform}
 .he-truck svg{display:block;width:100%;height:auto;overflow:visible}
 .he-truck .roda{transform-box:fill-box;transform-origin:center}
-.he-sombra{position:absolute;left:4%;right:4%;bottom:-6px;height:8px;border-radius:50%;background:#0006;filter:blur(4px)}
+.he-sombra{position:absolute;left:4%;right:4%;bottom:calc(-6px*var(--s,1));height:calc(8px*var(--s,1));border-radius:50%;background:#0006;filter:blur(4px)}
 @media (max-height:820px) and (min-width:881px){.hub-rodape{padding:12px 40px}.hub-dica{margin-top:8px}.hub-legenda{min-height:100px}}
 
 /* radar de brincadeira: alterna 80 km/h (verde) e 100 km/h (vermelho, com flash e câmera) */
-.he-radar{position:absolute;left:58%;bottom:34px;width:81px;height:88px;z-index:2;pointer-events:none}
+.he-radar{zoom:var(--s,1);position:absolute;left:58%;bottom:34px;width:81px;height:88px;z-index:2;pointer-events:none}
 .he-radar img{position:absolute;left:0;top:0;width:100%;height:100%;display:block}
 .he-r2{opacity:0}
 .he-radar.flash .he-r2{animation:herad2 1.3s ease-out}
 .he-radar.flash .he-r1{animation:herad1 1.3s ease-out}
 @keyframes herad2{0%{opacity:1}80%{opacity:1}100%{opacity:0}}
 @keyframes herad1{0%{opacity:0}80%{opacity:0}100%{opacity:1}}
-.he-placar{--H:84px;--c:#6dff96;position:absolute;left:calc(58% + 92px);bottom:38px;height:var(--H);opacity:0;z-index:3;pointer-events:none;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
+.he-placar{zoom:var(--s,1);--H:84px;--c:#6dff96;position:absolute;left:calc(58% + 92px);bottom:38px;height:var(--H);opacity:0;z-index:3;pointer-events:none;font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-weight:800;color:var(--c);font-variant-numeric:tabular-nums}
 .he-placar.vermelho{--c:#ff6a6a}
 .he-placar img{display:block;height:100%;width:auto}
 .he-placar>span,.he-placar>i{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;line-height:1;font-style:normal}
@@ -388,7 +388,7 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 @media (max-width:880px){.he-radar{width:64px;height:69px}.he-placar{--H:68px;left:calc(58% + 72px)}.he-placar.esq{left:calc(58% - 58px)}}
 
 /* ---------- tema de Natal (de 20/11 a 06/01): movimentos suaves, sem trocar de quadro ---------- */
-.hub-estrada.natal{height:158px}
+.hub-estrada.natal{height:calc(158px*var(--s,1))}
 .natal .he-radar{--rw:95px;width:var(--rw);height:96px;left:calc(58% - 41px);bottom:33px}
 .he-sway{position:absolute;inset:0;transform-origin:43% 98%;animation:hesway 3.2s ease-in-out infinite alternate}
 @keyframes hesway{0%{transform:rotate(-2.2deg) translateY(0)}50%{transform:rotate(0deg) translateY(-1px)}100%{transform:rotate(2.2deg) translateY(0)}}
@@ -406,9 +406,8 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 @keyframes hepl{0%,100%{opacity:0}50%{opacity:1}}
 .natal .he-n{left:50%;top:27%}.natal .he-u{left:69%;top:44%;font-size:calc(var(--H)*.075)}.natal .he-g{left:51%}
 .natal .g1{top:54%}.natal .g2{top:74%}
-.he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:83%;top:-20%;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;transform-origin:30% 95%;animation:hetouca 1.8s ease-in-out infinite alternate;z-index:1}
+.he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:83%;top:-20%;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;z-index:1}
 @keyframes hetouca{0%{transform:rotate(-5deg)}100%{transform:rotate(4deg) translateY(-1px)}}
-.he-truck.esq .he-touca{left:5%;scale:-1 1}
 .hub-touca{position:absolute;right:-6px;top:-34px;width:78px;aspect-ratio:110/92;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;pointer-events:none;transform-origin:25% 90%;animation:hetoucal 2.6s ease-in-out infinite alternate}
 @keyframes hetoucal{0%{transform:rotate(8deg)}100%{transform:rotate(19deg)}}
 @media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}.hub-touca{width:60px;top:-26px}}

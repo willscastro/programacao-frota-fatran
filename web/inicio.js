@@ -56,14 +56,13 @@ function estradaCaminhao() {
   est.innerHTML = '<div class="he-chao"></div>' + `` + (natal ? `<div class="he-radar"><div class="he-sway"><div class="he-r1"></div><i class="lz" style="left:54.9%;top:77.5%;animation-delay:0.00s"></i><i class="lz" style="left:46.9%;top:82.8%;animation-delay:0.37s"></i><i class="lz" style="left:36.3%;top:81.4%;animation-delay:0.74s"></i><i class="lz" style="left:31.2%;top:74.3%;animation-delay:1.11s"></i><i class="lz" style="left:35.4%;top:66.9%;animation-delay:1.48s"></i><i class="lz" style="left:45.7%;top:64.7%;animation-delay:0.25s"></i><i class="lz" style="left:54.4%;top:69.4%;animation-delay:0.62s"></i><img class="he-r2" src="natal-radar-flash.png" alt=""></div></div><div class="he-placar"><div class="pl-bg"></div><div class="pl-bg pl-b"></div><div class="pl-bg pl-c"></div><span class="he-n">80</span><i class="he-u">KM/H</i><span class="he-g g1">80</span><span class="he-g g2">80</span></div>` : `<div class="he-radar"><img class="he-r1" src="radar-1.png" alt=""><img class="he-r2" src="radar-2.png" alt=""></div><div class="he-placar"><img src="placar-vazio-verde.png" alt=""><span class="he-n">80</span><i class="he-u">KM/H</i><span class="he-g g1">80</span><span class="he-g g2">80</span></div>`) + `` + '<div class="he-truck">' + `<svg viewBox="0 0 1240 420" aria-label="Carreta sider da Fatran"><image class="cam-img" href="carreta-dir.png" x="0" y="0" width="1240" height="420"/><g class="rodaw" data-x="205" transform="translate(205 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="319" transform="translate(319 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="434" transform="translate(434 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="741" transform="translate(741 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="868" transform="translate(868 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g><g class="rodaw" data-x="1080" transform="translate(1080 364)"><g class="roda"><circle r="28.5" fill="#a9b4bb"/><circle r="26" fill="#9ea9b1"/><circle r="24" fill="#a9b4bb"/><circle cx="21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="0.0" cy="21.5" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="15.2" r="3.4" fill="#1c2b38"/><circle cx="-21.5" cy="0.0" r="3.4" fill="#1c2b38"/><circle cx="-15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle cx="-0.0" cy="-21.5" r="3.4" fill="#1c2b38"/><circle cx="15.2" cy="-15.2" r="3.4" fill="#1c2b38"/><circle r="14" fill="#1a2a39"/></g></g></svg>` + (natal ? '<div class="he-touca"></div>' : '') + '<div class="he-sombra"></div></div>';
   const tr = est.querySelector(".he-truck"), img = est.querySelector(".cam-img"), rodasw = [...est.querySelectorAll(".rodaw")], rodas = [...est.querySelectorAll(".roda")];
   const reduz = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
-  let x = 0, dir = 1, pausa = 0, ang = 0, t0 = performance.now(), ultimoFlash = 0, frenteAnt = null;
+  let x = -400, escAnt = 0, dir = 1, pausa = 0, ang = 0, t0 = performance.now(), ultimoFlash = 0, frenteAnt = null;
   const radar = est.querySelector(".he-radar"), placar = est.querySelector(".he-placar");
   const SEQ = [80, 100, 80, 200]; let k = 0; // alterna: 80 (verde, tudo certo), 100 (vermelho), 80, 200 (vermelho)
   const reinicia = (el, c) => { el.classList.remove(c); void el.getBoundingClientRect(); el.classList.add(c); };
   const pImg = placar.querySelector("img"), pN = placar.querySelector(".he-n"), pG = [...placar.querySelectorAll(".he-g")];
   let contagem = null;
   function flagrante() {
-    placar.classList.toggle("esq", dir < 0); // o placar fica do lado de onde o caminhão já saiu
     const alvo = SEQ[k % SEQ.length], verde = alvo <= 80; k++;
     if (pImg) pImg.src = verde ? "placar-vazio-verde.png" : "placar-vazio-vermelho.png";
     placar.classList.toggle("verde", verde); placar.classList.toggle("vermelho", !verde);
@@ -82,19 +81,19 @@ function estradaCaminhao() {
   function quadro(t) {
     if (!est.isConnected || S.tela !== "inicio") return; // a tela mudou: encerra o laço
     const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
-    const w = Math.max(200, Math.min(340, est.clientWidth * 0.3)); tr.style.width = w + "px";
-    const max = Math.max(0, est.clientWidth - w);
+    const cw = est.clientWidth, esc = Math.max(0.85, Math.min(2.4, cw / 1100)); // a cena escala com a largura (zoom do navegador / TV grande)
+    if (esc !== escAnt) { escAnt = esc; est.style.setProperty("--s", esc.toFixed(3)); }
+    const w = Math.round(270 * esc); tr.style.width = w + "px";
     if (!reduz) {
       if (pausa > 0) pausa -= dt;
       else {
-        const freio = Math.max(0.18, Math.min(1, (dir > 0 ? max - x : x) / 140)), arranque = Math.min(1, (dir > 0 ? x : max - x) / 60 + 0.25);
-        const v = 100 * freio * arranque; x += dir * v * dt; ang += dir * v * dt / (51 * w / 1240) * 57.3;
-        if (dir > 0 && x >= max - 0.5) { x = max; pausa = 1.4; dir = -1; virar(); }
-        else if (dir < 0 && x <= 0.5) { x = 0; pausa = 1.4; dir = 1; virar(); }
+        const v = Math.max(110, cw / 9) * (x < 0 ? 1 : Math.min(1, x / 60 + 0.35)); // mesma duração de travessia em qualquer tela
+        x += v * dt; ang += v * dt / (51 * w / 1240) * 57.3;
+        if (x >= cw + 20) { x = -w - 20; pausa = 1.2; frenteAnt = null; } // sai da tela pela direita e volta pela esquerda, sempre de frente
       }
-    }
-    const bob = !reduz && pausa <= 0 ? Math.sin(t / 90) * 0.7 : 0;
-    const rx = est.clientWidth * 0.58 + 36, frente = x + w * (dir > 0 ? 0.98 : 0.02); // posição do radar e da frente do caminhão
+    } else x = Math.max(0, (cw - w) / 2);
+    const bob = !reduz && pausa <= 0 ? Math.sin(t / 90) * 0.7 * esc : 0;
+    const rx = cw * 0.58 + 36 * esc, frente = x + w * 0.98; // posição do radar e da frente do caminhão
     if (!reduz && frenteAnt !== null && (frenteAnt - rx) * (frente - rx) <= 0 && frenteAnt !== frente && t - ultimoFlash > 3000) { ultimoFlash = t; flagrante(); }
     frenteAnt = frente;
     tr.style.transform = "translate(" + x.toFixed(1) + "px," + bob.toFixed(2) + "px)";
