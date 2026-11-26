@@ -354,13 +354,13 @@ body.tv .tv-bar,body.tv .resumo{zoom:var(--tvz,1)}
 body.tv .resumo{top:var(--tvbar,52px)}
 
 /* estrada com a carreta, logo acima da faixa azul do rodapé */
-.hub-estrada{--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:112px;overflow:hidden;margin-top:auto;flex:0 0 auto}
+.hub-estrada{--asfalto:#2b3744;--faixa:#cfe3ee;--sider:#fff;--sider-linha:#c9dbe6;position:relative;z-index:1;width:100%;height:136px;overflow:hidden;margin-top:auto;flex:0 0 auto}
 .hub-estrada+.hub-rodape{margin-top:0}
 html[data-tema="dark"] .hub-estrada{--asfalto:#07111a;--faixa:#3a5266;--sider:#e9f2f8;--sider-linha:#b4c8d6}
 .he-chao{position:absolute;left:0;right:0;bottom:0;height:36px;background:var(--asfalto)}
 .he-chao::before{content:"";position:absolute;left:0;right:0;top:0;height:3px;background:#1D9AD5}
 .he-chao::after{content:"";position:absolute;left:0;right:0;top:17px;height:3px;background:repeating-linear-gradient(90deg,var(--faixa) 0 30px,transparent 30px 60px)}
-.he-truck{position:absolute;left:0;bottom:19px;width:260px;will-change:transform}
+.he-truck{position:absolute;left:0;bottom:18px;width:260px;will-change:transform}
 .he-truck svg{display:block;width:100%;height:auto;overflow:visible}
 .he-truck .roda{transform-box:fill-box;transform-origin:center}
 .he-sombra{position:absolute;left:4%;right:4%;bottom:-6px;height:8px;border-radius:50%;background:#0006;filter:blur(4px)}
