@@ -652,15 +652,32 @@ function ajustarTV() {
   requestAnimationFrame(() => {
     if (!S.tv) return;
     $board.style.transform = "none"; $board.style.left = "0px";
-    const barra = document.querySelector(".tv-bar").offsetHeight; document.body.style.setProperty("--tvbar", barra + "px");
-    const topo = Math.ceil(barra + ($resumo ? $resumo.offsetHeight : 0));
+    const z = Math.min(3, Math.max(1, window.innerWidth / 1500)); document.body.style.setProperty("--tvz", z.toFixed(2));
+    const barra = Math.ceil(document.querySelector(".tv-bar").getBoundingClientRect().height); document.body.style.setProperty("--tvbar", (barra / z) + "px"); // o zoom do próprio elemento multiplica o "top"
+    const topo = Math.ceil(barra + ($resumo ? $resumo.getBoundingClientRect().height : 0));
     const W = window.innerWidth, H = window.innerHeight - topo;
     $board.style.top = topo + "px";
-    const bw = $board.offsetWidth, bh = $board.offsetHeight;
-    if (!bw || !bh) return;
-    const k = Math.min(W / bw, H / bh, 3);
+    const cols = [...$board.querySelectorAll(".col")];
+    // Testa dividir as colunas com muitos cartões em 1 a 4 sub-colunas e fica com o arranjo que dá a maior escala
+    const arranjar = (m) => cols.forEach((col) => {
+      const cards = [...col.querySelectorAll(":scope > .card")];
+      const sub = Math.min(m, Math.max(1, Math.ceil(cards.length / 3))), linhas = Math.max(1, Math.ceil(cards.length / sub));
+      col.style.setProperty("--sub", sub);
+      cards.forEach((c, i) => { c.style.gridColumn = Math.floor(i / linhas) + 1; c.style.gridRow = (i % linhas) + 2; });
+    });
+    let melhor = { k: 0, m: 1 };
+    for (let m = 1; m <= 4; m++) {
+      arranjar(m);
+      const bw = $board.offsetWidth, bh = $board.offsetHeight;
+      if (!bw || !bh) return;
+      const k = Math.min(W / bw, H / bh, 4);
+      if (k > melhor.k * 1.02) melhor = { k, m };
+    }
+    arranjar(melhor.m);
+    const bw = $board.offsetWidth, bh = $board.offsetHeight, k = Math.min(W / bw, H / bh, 4);
     $board.style.transform = "scale(" + k + ")";
     $board.style.left = Math.max(0, (W - bw * k) / 2) + "px";
+    $board.style.top = (topo + Math.max(0, (H - bh * k) / 4)) + "px"; // sobra de altura: desce um pouco, sem ficar colado no topo
   });
 }
 function alternarTV(ligar) {
