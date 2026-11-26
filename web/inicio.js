@@ -173,7 +173,7 @@ function estradaCaminhao() {
   function quadro(t) {
     if (!est.isConnected || S.tela !== "inicio") return; // a tela mudou: encerra o laço
     const dt = Math.min(0.05, (t - t0) / 1000); t0 = t;
-    const cw = est.clientWidth, esc = Math.max(0.85, Math.min(2.4, cw / 1100)); // a cena escala com a largura (zoom do navegador / TV grande)
+    const cw = est.clientWidth, esc = Math.max(0.6, Math.min(2.4, cw / 1100, innerHeight * 0.18 / 158)); // a cena escala com a largura (zoom do navegador / TV grande)
     if (esc !== escAnt) { escAnt = esc; est.style.setProperty("--s", esc.toFixed(3)); }
     const w = Math.round(270 * esc); tr.style.width = w + "px";
     if (!reduz) {
@@ -220,22 +220,24 @@ function mostrarInicio() {
   });
   const grade = h("div", { class: "hub-grade" }, ...nos);
   const palco_ = h("div", { class: "hub-stage" }, h("span", { class: "hub-anel" }), orbita, ...fios, centro, grade);
-  palco.append(palco_);
+  palco.append(palco_, legenda);
 
   function marcar() {
     nos.forEach((b) => b.classList.toggle("sel", b.dataset.id === inicioSel));
     const m = mods.find((x) => x.id === inicioSel);
     if (!m || !pag.classList.contains("aberto")) { legenda.replaceChildren(); return; }
+    const ix = mods.indexOf(m), nx = parseFloat(nos[ix].style.getPropertyValue("--x")) || 0;
+    legenda.classList.toggle("dir", nx <= 0); // o cartão abre no canto oposto ao módulo escolhido, sem cobrir o desenho
     legenda.replaceChildren(h("div", { class: "hub-cartao" },
       h("h2", {}, m.nome), h("p", {}, m.desc),
       h("button", { class: "hub-abrir", type: "button", disabled: !!m.breve, onclick: () => abrirModulo(m.id) }, m.breve ? "Disponível em breve" : "Abrir módulo")));
-    legenda.scrollIntoView({ block: "nearest", behavior: "smooth" });
+    if (innerWidth <= 880) legenda.scrollIntoView({ block: "nearest", behavior: "smooth" });
   }
   function layout() {
     if (S.tela !== "inicio") return;
     // Palco de tamanho fixo (960x640) reduzido/ampliado para caber na tela, seja notebook, monitor ou TV
-    const rx = 400, ry = 240;
-    const k = Math.min(palco.clientWidth / 960, palco.clientHeight / 640, 2);
+    const rx = 400, ry = 212;
+    const k = Math.min(palco.clientWidth / 940, palco.clientHeight / 560, 2);
     palco_.style.setProperty("--k", Math.max(k, 0.3).toFixed(3));
     orbita.style.width = Math.round(rx * 2) + "px"; orbita.style.height = Math.round(ry * 2) + "px";
     const n = mods.length;
@@ -253,7 +255,7 @@ function mostrarInicio() {
     h("div", { class: "hub-topo" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }),
       h("div", { class: "hub-quem" }, temaNatal() ? MUSICA.botao() : null, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
-    dica, palco, legenda,
+    dica, palco,
     estradaCaminhao(),
     rodapeFatran());
   if (temaNatal()) nevar(pag);

@@ -215,7 +215,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-dica{position:relative;margin:14px 0 0;font-size:14px;font-weight:500;color:var(--tx2);text-align:center;height:20px;transition:opacity .4s,transform .4s}
 .hub.aberto .hub-dica{opacity:0;transform:translateY(-6px)}
 .hub-palco{position:relative;width:100%;flex:1 1 0;min-height:280px}
-.hub-stage{position:absolute;left:50%;top:50%;width:960px;height:640px;margin:-320px 0 0 -480px;transform:scale(var(--k,1))}
+.hub-stage{position:absolute;left:50%;top:50%;width:960px;height:560px;margin:-280px 0 0 -480px;transform:scale(var(--k,1))}
 .hub-centro{position:absolute;left:50%;top:50%;width:176px;height:176px;margin:-88px 0 0 -88px;border-radius:50%!important;border:2px solid var(--bd2)!important;background:var(--hubcard,#fff)!important;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:0;z-index:5;box-shadow:0 18px 44px #12263A26;transition:transform .6s cubic-bezier(.2,.8,.2,1),box-shadow .4s,border-color .3s}
 .hub-centro:hover{border-color:var(--az)!important;box-shadow:0 18px 54px #12263A33,0 0 0 8px #1D9AD52b}
 .hub-centro:focus-visible,.hub-no:focus-visible{outline:3px solid var(--az2);outline-offset:4px}
@@ -228,11 +228,11 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-orbita{position:absolute;left:50%;top:50%;border-radius:50%;border:1px dashed #9FD6F0;transform:translate(-50%,-50%) scale(.2);opacity:0;transition:transform .9s cubic-bezier(.2,.8,.2,1),opacity .6s;pointer-events:none}
 .hub.aberto .hub-orbita{opacity:1;transform:translate(-50%,-50%) scale(1)}
 /* abre em ordem: a linha chega primeiro, depois o bloco; fecha em ordem: o bloco some, depois a linha recolhe */
-.hub-fio{position:absolute;left:50%;top:50%;height:3px;border-radius:2px;width:var(--len);margin-top:-1.5px;transform-origin:0 50%;transform:rotate(var(--ang)) translateX(88px) scaleX(0);background:var(--az);opacity:.5;transition:transform .22s ease-in calc(var(--i)*30ms + 140ms);pointer-events:none}
-.hub.aberto .hub-fio{transform:rotate(var(--ang)) translateX(88px) scaleX(1);transition:transform .3s ease-out calc(var(--i)*45ms)}
+.hub-fio{position:absolute;left:50%;top:50%;height:3px;border-radius:2px;width:var(--len);margin-top:-1.5px;transform-origin:0 50%;transform:rotate(var(--ang)) translateX(88px) scaleX(0);background:var(--az);opacity:0;transition:transform .2s ease-in,opacity .15s;pointer-events:none}
+.hub.aberto .hub-fio{opacity:.5;transform:rotate(var(--ang)) translateX(88px) scaleX(1);transition:transform .32s ease-out calc(var(--i)*18ms),opacity .15s calc(var(--i)*18ms)}
 .hub-grade{display:contents}
 .hub-no{position:absolute;left:50%;top:50%;width:124px;margin:-42px 0 0 -62px;padding:0;border:0!important;background:none!important;text-align:center;z-index:6;opacity:0;transform:translate(var(--x),var(--y)) scale(.3);pointer-events:none;transition:transform .18s ease calc(var(--i)*30ms),opacity .15s ease calc(var(--i)*30ms)}
-.hub.aberto .hub-no{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto;transition:transform .4s cubic-bezier(.34,1.45,.5,1) calc(var(--i)*45ms + 240ms),opacity .25s ease calc(var(--i)*45ms + 240ms)}
+.hub.aberto .hub-no{opacity:1;transform:translate(var(--x),var(--y)) scale(1);pointer-events:auto;transition:transform .4s cubic-bezier(.34,1.45,.5,1) calc(var(--i)*18ms + 260ms),opacity .25s ease calc(var(--i)*18ms + 260ms)}
 .hub-ic{width:84px;height:84px;margin:0 auto;border-radius:50%;display:grid;place-items:center;background:var(--hubcard,#fff);border:2px solid var(--bd2);color:var(--az2);box-shadow:0 10px 26px #12263A1f;transition:transform .25s,border-color .25s,box-shadow .25s,background .25s}
 .hub-ic .ic{width:34px;height:34px;stroke-width:1.7;margin:0}
 .hub-no:hover .hub-ic,.hub-no.sel .hub-ic{transform:translateY(-4px) scale(1.06);border-color:var(--az);box-shadow:0 14px 30px #12263A30,0 0 0 6px #1D9AD52b}
@@ -242,7 +242,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
 .hub-no.rot-cima .hub-txt{position:absolute;bottom:100%;left:-10px;right:-10px;margin-bottom:8px}
 .hub-no.rot-cima .hub-rot{margin-top:0}
 .hub-no.breve .hub-ic{border-style:dashed;color:#5d8aa5;background:var(--hubfundo,#F3F8FB)}
-.hub-legenda{position:relative;margin-top:10px;width:100%;max-width:560px;min-height:116px;padding:0 24px}
+.hub-legenda{position:absolute;left:18px;bottom:10px;width:min(340px,40vw);z-index:8}.hub-legenda.dir{left:auto;right:18px}
 .hub-cartao{border:2px solid var(--bd2);border-radius:20px;background:var(--hubcard,#fff);padding:16px 20px;display:flex;flex-direction:column;align-items:center;gap:6px;text-align:center;animation:hubentra .35s ease both}
 .hub-cartao h2{margin:0;font-size:18px;font-weight:800}
 .hub-cartao p{margin:0;font-size:14px;line-height:1.45;color:var(--tx2)}
@@ -264,6 +264,7 @@ header.top .filtros,header.top .ferramentas{display:contents}
   .hub-anel{top:12px;width:148px;height:148px;margin:0 0 0 -74px}
   .hub.aberto .hub-centro{transform:scale(.86)}
   .hub-orbita,.hub-fio{display:none}
+  .hub-legenda,.hub-legenda.dir{position:relative;left:auto;right:auto;bottom:auto;width:100%;max-width:560px;margin:10px auto 0;padding:0 16px}
   .hub-grade{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;width:100%;padding:0 16px;max-height:0;overflow:hidden;transition:max-height .6s ease}
   .hub.aberto .hub-grade{max-height:760px}
   .hub-no{position:relative;left:auto;top:auto;margin:0;width:auto;display:flex;align-items:center;gap:12px;text-align:left;padding:12px;border-radius:16px;background:var(--hubcard,#fff)!important;border:2px solid var(--bd2)!important;opacity:0;transform:translateY(18px);transition:opacity .4s ease calc(var(--i)*70ms),transform .4s ease calc(var(--i)*70ms)}
@@ -364,7 +365,7 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 .he-truck svg{display:block;width:100%;height:auto;overflow:visible}
 .he-truck .roda{transform-box:fill-box;transform-origin:center}
 .he-sombra{position:absolute;left:4%;right:4%;bottom:calc(-6px*var(--s,1));height:calc(8px*var(--s,1));border-radius:50%;background:#0006;filter:blur(4px)}
-@media (max-height:820px) and (min-width:881px){.hub-rodape{padding:12px 40px}.hub-dica{margin-top:8px}.hub-legenda{min-height:100px}}
+@media (max-height:820px) and (min-width:881px){.hub-rodape{padding:12px 40px}.hub-dica{margin-top:8px}}
 
 /* radar de brincadeira: alterna 80 km/h (verde) e 100 km/h (vermelho, com flash e câmera) */
 .he-radar{zoom:var(--s,1);position:absolute;left:58%;bottom:34px;width:81px;height:88px;z-index:2;pointer-events:none}
