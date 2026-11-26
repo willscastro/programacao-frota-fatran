@@ -408,7 +408,7 @@ html[data-tema="dark"] .hub-estrada{--rd-linha:#8fc3df;--asfalto:#07111a;--faixa
 .natal .g1{top:54%}.natal .g2{top:74%}
 .he-touca{position:absolute;width:12%;aspect-ratio:110/92;left:83%;top:-20%;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;z-index:1}
 @keyframes hetouca{0%{transform:rotate(-5deg)}100%{transform:rotate(4deg) translateY(-1px)}}
-.hub-touca{position:absolute;right:-6px;top:-34px;width:78px;aspect-ratio:110/92;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;pointer-events:none;transform-origin:25% 90%;animation:hetoucal 2.6s ease-in-out infinite alternate}
+.hub-touca{position:absolute;left:52%;top:-13%;width:46%;aspect-ratio:110/92;background:url(natal-touca-1.png) 0 0/100% 100% no-repeat;pointer-events:none;transform-origin:50% 100%;transform:rotate(38deg);z-index:2}
 @keyframes hetoucal{0%{transform:rotate(8deg)}100%{transform:rotate(19deg)}}
-@media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}.hub-touca{width:60px;top:-26px}}
-@media (prefers-reduced-motion:reduce){.he-sway,.lz,.pl-b,.pl-c,.he-touca,.hub-touca{animation:none}}
+@media (max-width:880px){.natal .he-radar{--rw:78px;height:79px;left:calc(58% - 34px)}.natal .he-placar{--H:70px;left:calc(58% + 46px)}.natal .he-placar.esq{left:calc(58% - 80px)}}
+@media (prefers-reduced-motion:reduce){.he-sway,.lz,.pl-b,.pl-c{animation:none}}
