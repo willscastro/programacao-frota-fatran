@@ -17,6 +17,8 @@ const ICONES_INICIO = {
   m_admin: '<path d="M12 3l8 3v6c0 4.5-3.2 8-8 9-4.8-1-8-4.5-8-9V6z"/><path d="M9 12l2 2 4-4"/>',
   lua: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
+  musica: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  musica_off: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M3 3l18 18"/>',
   casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
 };
 
@@ -34,6 +36,59 @@ function botaoTema() {
   iconeTema(b);
   return b;
 }
+
+
+// Música de fundo de Natal: melodias tradicionais (domínio público) sintetizadas aqui mesmo, em timbre de caixinha de música, bem baixinha.
+// Navegadores só liberam áudio depois de um toque; por isso há um botão, e a escolha fica salva neste aparelho.
+const MUSICA = (() => {
+  const JB = [[76,1],[76,1],[76,2],[76,1],[76,1],[76,2],[76,1],[79,1],[72,1.5],[74,.5],[76,4],[77,1],[77,1],[77,1.5],[77,.5],[77,1],[76,1],[76,1],[76,.5],[76,.5],[76,1],[74,1],[74,1],[76,1],[74,2],[79,2]];
+  const WW = [[67,1],[72,1],[72,.5],[74,.5],[72,.5],[71,.5],[69,1],[69,1],[69,1],[74,1],[74,.5],[76,.5],[74,.5],[72,.5],[71,1],[67,1],[67,1],[76,1],[76,.5],[77,.5],[76,.5],[74,.5],[72,1],[69,1],[67,.5],[67,.5],[69,1],[74,1],[71,1],[72,3]];
+  const BAIXO = { 72: 48, 71: 43, 69: 45, 67: 43, 74: 43, 76: 48, 77: 41, 79: 48 };
+  let ctx = null, mestre = null, ligada = false, timer = null, prox = 0, parte = 0;
+  const ler = () => { try { return localStorage.getItem("fatran_musica") === "1"; } catch (e) { return false; } };
+  const gravar = (v) => { try { localStorage.setItem("fatran_musica", v ? "1" : "0"); } catch (e) { /* sem armazenamento */ } };
+  const hz = (m) => 440 * Math.pow(2, (m - 69) / 12);
+  function nota(m, t, dur, vol) {
+    const g = ctx.createGain(); g.gain.setValueAtTime(0, t); g.gain.linearRampToValueAtTime(vol, t + 0.012); g.gain.exponentialRampToValueAtTime(0.0008, t + Math.max(0.5, dur * 1.8));
+    [[1, 1], [2, 0.18], [3.01, 0.07]].forEach(([mul, a]) => { const o = ctx.createOscillator(); o.type = "sine"; o.frequency.value = hz(m) * mul; const ga = ctx.createGain(); ga.gain.value = a; o.connect(ga); ga.connect(g); o.start(t); o.stop(t + Math.max(0.5, dur * 1.8) + 0.05); });
+    g.connect(mestre);
+  }
+  function agenda() {
+    if (!ligada) return;
+    const bpm = 112, b = 60 / bpm;
+    while (prox < ctx.currentTime + 1.2) {
+      const mel = parte % 2 === 0 ? JB : WW;
+      let t = prox, beats = 0;
+      mel.forEach(([m, d]) => { nota(m, t, d * b, 0.5); if (beats % 2 === 0) nota(BAIXO[m] || 43, t, d * b, 0.22); t += d * b; beats += d; });
+      prox = t + 2.5 * b; parte++; // pausa curta entre as músicas
+    }
+    timer = setTimeout(agenda, 400);
+  }
+  function ligar() {
+    const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return false;
+    if (!ctx) {
+      ctx = new AC(); mestre = ctx.createGain(); mestre.gain.value = 0.06; // volume bem baixo
+      const eco = ctx.createDelay(); eco.delayTime.value = 0.28; const fb = ctx.createGain(); fb.gain.value = 0.35; mestre.connect(eco); eco.connect(fb); fb.connect(eco);
+      const lp = ctx.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 4200; mestre.connect(lp); eco.connect(lp); lp.connect(ctx.destination);
+    }
+    ctx.resume(); ligada = true; prox = ctx.currentTime + 0.2; agenda(); return true;
+  }
+  function desligar() { ligada = false; clearTimeout(timer); if (ctx) ctx.suspend(); }
+  const icone = (b) => { b.replaceChildren(ic(ligada ? "musica" : "musica_off")); const t = ligada ? "Desligar a música de Natal" : "Ligar a música de Natal"; b.title = t; b.setAttribute("aria-label", t); b.setAttribute("aria-pressed", String(ligada)); };
+  return {
+    botao() {
+      const b = h("button", { type: "button", class: "btn-tema btn-musica" });
+      b.onclick = () => { if (ligada) { desligar(); gravar(false); } else { if (ligar()) gravar(true); } icone(b); };
+      icone(b);
+      if (ler()) { // preferência salva: começa no primeiro toque/tecla na página (exigência do navegador)
+        const iniciar = () => { removeEventListener("pointerdown", iniciar, true); removeEventListener("keydown", iniciar, true); if (!ligada && b.isConnected && ler() && ligar()) icone(b); };
+        addEventListener("pointerdown", iniciar, true); addEventListener("keydown", iniciar, true);
+      }
+      return b;
+    },
+    parar() { if (ligada) { desligar(); } },
+  };
+})();
 
 // Rodapé das telas de módulos: empresa, site e crédito de desenvolvimento
 function rodapeFatran() {
@@ -203,7 +258,7 @@ function mostrarInicio() {
 
   pag.append(
     h("div", { class: "hub-topo" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }),
-      h("div", { class: "hub-quem" }, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
+      h("div", { class: "hub-quem" }, temaNatal() ? MUSICA.botao() : null, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     dica, palco, legenda,
     estradaCaminhao(),
@@ -219,6 +274,7 @@ function mostrarInicioLayout() { if (window.__hubLayout) window.__hubLayout(); }
 
 // Abre o módulo escolhido. Os módulos usam o quadro como base (dados e permissões já carregados).
 async function abrirModulo(id) {
+  MUSICA.parar();
   if (id === "mapa" || id === "manut") return;
   if (id === "docs") return telaEnvioDocs(); // tela própria: não abre o quadro
   if (id === "painel") return telaIndicadores(); // tela própria: não abre o quadro
