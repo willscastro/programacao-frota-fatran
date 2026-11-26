@@ -330,3 +330,19 @@ html[data-tema="dark"] .hub-centro{background:#fff!important}
 .hd-dir{display:flex;align-items:center;gap:6px}
 @media (max-width:720px){header.top .titulo{min-width:0!important}}
 @media (max-width:430px){header.top .menu-btn .mb-t{display:none}header.top .menu-btn{padding:6px 10px}}
+
+/* Modo TV: tela cheia, tudo cabe sem rolagem (escala calculada em ajustarTV) */
+.tv-bar{display:none}
+body.tv{overflow:hidden}
+body.tv header.top,body.tv .resumo .hint{display:none}
+body.tv .tv-bar{display:flex;align-items:center;gap:14px;padding:8px 16px;background:var(--card);border-bottom:1px solid var(--bd);position:fixed;top:0;left:0;right:0;z-index:15}
+body.tv .tv-tit{font-size:18px;flex:1}
+body.tv .tv-dia{font-weight:600}
+body.tv .tv-rel{font-variant-numeric:tabular-nums;font-weight:700;color:#0A74AA}
+body.tv .resumo{position:fixed;left:0;right:0;top:var(--tvbar,52px);z-index:14;flex-wrap:wrap;overflow:visible;padding:8px 16px;background:var(--bg)}
+body.tv .board{position:fixed;display:flex;flex-wrap:nowrap;width:max-content;overflow:visible;padding:12px;gap:12px;min-height:0;transform-origin:0 0;scroll-snap-type:none;align-items:flex-start}
+body.tv .col{flex:0 0 260px!important}
+body.tv .col-seta{display:none!important}
+body.tv #gavetas{z-index:50}
+body.tv .card{cursor:default}
+@media (max-width:720px){body.tv .tv-bar{gap:8px;padding:6px 10px}body.tv .tv-tit{font-size:13px;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}body.tv .tv-dia{display:none}body.tv .tv-bar button{min-height:34px;padding:4px 10px;white-space:nowrap}body.tv .resumo{padding:6px 10px;gap:5px}body.tv .resumo .pill{font-size:10px;padding:2px 7px}}

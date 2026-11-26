@@ -44,6 +44,8 @@ const ICONES = {
   olho_off: '<path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"/><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"/><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"/><path d="M2 2l20 20"/>',
   olho: '<path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/>',
   menu: '<path d="M4 6h16M4 12h16M4 18h16"/>',
+  tv: '<rect x="2.5" y="4" width="19" height="13" rx="2"/><path d="M8 21h8M12 17v4"/>',
+  fechar_tv: '<path d="M6 6l12 12M18 6L6 18"/>',
   calendario: '<rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/>',
   enviar: '<path d="m22 2-7 20-4-9-9-4z"/><path d="M22 2 11 13"/>',
   anexo: '<path d="m21.44 11.05-9.19 9.19a6 6 0 0 1-8.49-8.49l8.57-8.57A4 4 0 1 1 18 8.84l-8.59 8.57a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
@@ -446,6 +448,12 @@ function desenharEstrutura() {
   $resumo = h("div", { class: "resumo" });
   $board = h("main", { class: "board" });
   $app.replaceChildren(
+    h("div", { class: "tv-bar" },
+      h("b", { class: "tv-tit" }, "Programação de Frota · Fatran"),
+      h("span", { class: "tv-dia" }, DIAS[d.getDay()] + ", " + dataBR(S.dia)),
+      $tvRelogio = h("span", { class: "tv-rel" }, ""),
+      botaoTema(),
+      h("button", { type: "button", title: "Sair do modo TV (Esc)", onclick: () => alternarTV(false) }, [ic("fechar_tv"), " Sair"])),
     h("header", { class: "top" },
       h("button", { class: "btn-inicio", title: "Voltar ao menu inicial", onclick: voltarInicio }, ic("casa"), " Início"),
       h("div", { class: "titulo", style: "flex:1;min-width:170px" }, h("h1", {}, "Programação de Frota"), h("div", { class: "who" }, "Fatran · " + S.perfil.nome + " (" + S.perfil.papel + ")")),
@@ -463,7 +471,7 @@ function desenharEstrutura() {
       h("div", { class: "filtros" }, $busca, tipo, $btnAlerta),
       h("div", { class: "ferramentas" }, $btnSync,
         h("span", { class: "who lado" }, "Gaveta abre:"), h("span", { class: "seg lado" }, $lados.left, $lados.both, $lados.right),
-        compacto, $btnVazias, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes)),
+        h("button", { class: "btn-tv", title: "Tela cheia ajustada à TV, sem rolagem", onclick: () => alternarTV(true) }, [ic("tv"), " Modo TV"]), compacto, $btnVazias, legendas, $btnDesfazer, mapa, hist, painel, reset, ...botoes)),
     $resumo, $board, h("div", { id: "gavetas" }));
 }
 
@@ -600,7 +608,7 @@ function desenharQuadro() {
   let ocultas = 0;
   const cols = ativos.map((s) => {
     const itens = S.rows.filter((r) => r.status === s.codigo && passa(r));
-    if (S.ocultarVazias && !itens.length) { ocultas++; return null; }
+    if ((S.ocultarVazias || S.tv) && !itens.length) { ocultas++; return null; }
     const col = h("section", { class: "col",
       ondragover: (e) => {
         const ehColuna = e.dataTransfer.types.includes("application/x-coluna");
@@ -634,7 +642,40 @@ function desenharQuadro() {
     else rot($btnVazias, "olho_off", "Ocultar colunas vazias");
   }
   desenharResumo();
+  ajustarTV();
 }
+
+// ---------- modo TV ----------
+let $tvRelogio, tvTimer;
+function ajustarTV() {
+  if (!S.tv || !$board) return;
+  requestAnimationFrame(() => {
+    if (!S.tv) return;
+    $board.style.transform = "none"; $board.style.left = "0px";
+    const barra = document.querySelector(".tv-bar").offsetHeight; document.body.style.setProperty("--tvbar", barra + "px");
+    const topo = Math.ceil(barra + ($resumo ? $resumo.offsetHeight : 0));
+    const W = window.innerWidth, H = window.innerHeight - topo;
+    $board.style.top = topo + "px";
+    const bw = $board.offsetWidth, bh = $board.offsetHeight;
+    if (!bw || !bh) return;
+    const k = Math.min(W / bw, H / bh, 3);
+    $board.style.transform = "scale(" + k + ")";
+    $board.style.left = Math.max(0, (W - bw * k) / 2) + "px";
+  });
+}
+function alternarTV(ligar) {
+  S.tv = ligar === undefined ? !S.tv : !!ligar;
+  document.body.classList.toggle("tv", S.tv);
+  if (!S.tv) { $board.style.transform = ""; $board.style.left = ""; $board.style.top = ""; clearInterval(tvTimer); }
+  else { const tic = () => { if ($tvRelogio) $tvRelogio.textContent = new Date().toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", second: "2-digit" }); }; tic(); tvTimer = setInterval(tic, 1000); }
+  try {
+    if (S.tv && !document.fullscreenElement && document.documentElement.requestFullscreen) document.documentElement.requestFullscreen().catch(() => {});
+    if (!S.tv && document.fullscreenElement) document.exitFullscreen();
+  } catch (e) {}
+  desenharQuadro();
+}
+window.addEventListener("resize", ajustarTV);
+document.addEventListener("fullscreenchange", () => { if (S.tv && !document.fullscreenElement) alternarTV(false); });
 
 // ---------- desfazer ----------
 let $btnDesfazer;
