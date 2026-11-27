@@ -18,6 +18,7 @@ const ICONES_INICIO = {
   lua: '<path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z"/>',
   sol: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   musica: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/>',
+  estilo: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4.5"/><path d="M12 12l6-6"/>',
   musica_off: '<path d="M9 18V5l11-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="17" cy="16" r="3"/><path d="M3 3l18 18"/>',
   casa: '<path d="M3 11.5 12 4l9 7.5"/><path d="M5 10v10h14V10"/><path d="M10 20v-6h4v6"/>',
 };
@@ -196,16 +197,20 @@ function estradaCaminhao() {
   return est;
 }
 
+const ESTILOS_HUB = [["original", "Original"], ["mira", "Mira"], ["leque", "Leque"]];
+function estiloHub() { try { const v = localStorage.getItem("fatran_estilo_hub"); if (ESTILOS_HUB.some((e) => e[0] === v)) return v; } catch (e) {} return "original"; }
+
 function mostrarInicio() {
   Object.assign(ICONES, ICONES_INICIO);
   S.tela = "inicio"; inicioSel = null;
   const mods = MODULOS.filter((m) => !m.perm || can(m.perm));
-  const pag = h("div", { class: "hub" });
+  let estilo = estiloHub();
+  const pag = h("div", { class: "hub est-" + estilo });
   const dica = h("p", { class: "hub-dica" }, "Toque na logo para abrir os módulos");
   const palco = h("div", { class: "hub-palco" });
   const legenda = h("div", { class: "hub-legenda" });
   const centro = h("button", { class: "hub-centro", type: "button", "aria-expanded": "false", "aria-label": "Abrir ou fechar os módulos da Fatran",
-    onclick: () => { const a = pag.classList.toggle("aberto"); centro.setAttribute("aria-expanded", String(a)); inicioSel = null; marcar(); } },
+    onclick: () => { const a = pag.classList.toggle("aberto"); centro.setAttribute("aria-expanded", String(a)); inicioSel = null; marcar(); girarLeque(); } },
     temaNatal() ? h("span", { class: "hub-touca", "aria-hidden": "true" }) : null, h("img", { src: "logo-fatran.png", alt: "Fatran" }), h("span", { class: "hub-cliq" }, "Toque para abrir"));
   const orbita = h("span", { class: "hub-orbita" });
   const fios = mods.map((_, i) => h("span", { class: "hub-fio", style: "--i:" + i }));
@@ -213,14 +218,48 @@ function mostrarInicio() {
     const ico = ic(m.icone);
     const b = h("button", { class: "hub-no" + (m.breve ? " breve" : ""), type: "button", style: "--i:" + i, "aria-label": m.nome,
       onclick: () => { inicioSel = m.id; marcar(); } },
-      h("span", { class: "hub-ic" }, ico),
+      h("span", { class: "hub-ic" }, ico, h("i", { class: "cant a" }), h("i", { class: "cant b" }), h("i", { class: "cant c" }), h("i", { class: "cant d" }), h("span", { class: "hub-num" }, String(i + 1).padStart(2, "0"))),
       h("span", { class: "hub-txt" }, h("span", { class: "hub-rot" }, m.nome), m.breve ? h("span", { class: "hub-tag" }, "Em breve") : null));
     b.dataset.id = m.id;
     return b;
   });
   const grade = h("div", { class: "hub-grade" }, ...nos);
-  const palco_ = h("div", { class: "hub-stage" }, h("span", { class: "hub-anel" }), orbita, ...fios, centro, grade);
+  const leque = h("div", { class: "fx-leque" }, h("div", { class: "fx-cunha" }));
+  const fx = h("div", { class: "hub-fx", "aria-hidden": "true" },
+    h("span", { class: "fx-malha" }), h("span", { class: "fx-mh" }), h("span", { class: "fx-mv" }),
+    h("div", { class: "fx-elip" }, h("span", { class: "fx-anel a" }), h("span", { class: "fx-anel b" }), h("span", { class: "fx-anel c" }), h("div", { class: "fx-varre" }), leque));
+  let animLeque = null;
+  function girarLeque() {
+    if (animLeque) { animLeque.cancel(); animLeque = null; }
+    if (estilo !== "leque" || !pag.classList.contains("aberto") || !leque.animate || matchMedia("(prefers-reduced-motion:reduce)").matches) return;
+    const n = mods.length, kf = []; // para em cada módulo (ângulo = posição na elipse, a partir do topo)
+    for (let i = 0; i < n; i++) { const a = (360 / n) * i, t0 = i / n, t1 = (i + 0.78) / n; kf.push({ transform: "rotate(" + a + "deg)", offset: t0 }, { transform: "rotate(" + a + "deg)", offset: t1 }); }
+    kf.push({ transform: "rotate(360deg)", offset: 1 });
+    pag.style.setProperty("--T", n + "s");
+    animLeque = leque.animate(kf, { duration: n * 1000, iterations: Infinity, delay: 0 });
+  }
+  const palco_ = h("div", { class: "hub-stage" }, fx, h("span", { class: "hub-anel" }), orbita, ...fios, centro, grade);
   palco.append(palco_, legenda);
+
+  const btnEstilo = h("button", { type: "button", class: "btn-estilo" });
+  function rotuloEstilo() {
+    Object.assign(ICONES, ICONES_INICIO);
+    const nome = ESTILOS_HUB.find((e) => e[0] === estilo)[1];
+    btnEstilo.replaceChildren(ic("estilo"), h("span", {}, nome));
+    btnEstilo.title = "Estilo da abertura: " + nome + " (toque para trocar)"; btnEstilo.setAttribute("aria-label", btnEstilo.title);
+  }
+  btnEstilo.onclick = () => {
+    const i = ESTILOS_HUB.findIndex((e) => e[0] === estilo);
+    estilo = ESTILOS_HUB[(i + 1) % ESTILOS_HUB.length][0];
+    try { localStorage.setItem("fatran_estilo_hub", estilo); } catch (e) {}
+    ESTILOS_HUB.forEach((e) => pag.classList.toggle("est-" + e[0], e[0] === estilo));
+    rotuloEstilo();
+    if (pag.classList.contains("aberto")) { // reabre para mostrar a animação do estilo escolhido
+      pag.classList.add("reinicia"); inicioSel = null; marcar(); void pag.offsetWidth; pag.classList.remove("aberto");
+      setTimeout(() => { pag.classList.remove("reinicia"); pag.classList.add("aberto"); girarLeque(); }, 650);
+    }
+  };
+  rotuloEstilo();
 
   function marcar() {
     nos.forEach((b) => b.classList.toggle("sel", b.dataset.id === inicioSel));
@@ -253,7 +292,7 @@ function mostrarInicio() {
 
   pag.append(
     h("div", { class: "hub-topo" }, h("img", { src: "logo-fatran.png", alt: "Fatran" }),
-      h("div", { class: "hub-quem" }, temaNatal() ? MUSICA.botao() : null, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
+      h("div", { class: "hub-quem" }, btnEstilo, temaNatal() ? MUSICA.botao() : null, botaoTema(), h("span", {}, S.perfil.nome + " (" + S.perfil.papel + ")"),
         h("button", { type: "button", onclick: async () => { await sb.auth.signOut(); location.reload(); } }, "Sair"))),
     dica, palco,
     estradaCaminhao(),
